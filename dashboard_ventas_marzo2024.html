@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mercado Central · Panel de Análisis de Ventas — Marzo 2024</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600;700&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF6EE;
+  --paper-dim:#F1EBDB;
+  --ink:#1C1B19;
+  --ink-soft:#5B5650;
+  --green:#2D6A4F;
+  --green-soft:#D7E8DD;
+  --orange:#E0703A;
+  --orange-soft:#FBE3D3;
+  --blue:#3D5A80;
+  --blue-soft:#DDE6F0;
+  --line:#1C1B19;
+  --line-soft:rgba(28,27,25,0.14);
+  --red:#B3432A;
+  --radius:0px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Archivo',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+/* ===== Textured backdrop: subtle dot grid like thermal paper ===== */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image: radial-gradient(circle, rgba(28,27,25,0.05) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.page{
+  position:relative;
+  z-index:1;
+  max-width:1180px;
+  margin:0 auto;
+  padding:28px 20px 80px;
+}
+
+/* ===== HEADER: receipt style ===== */
+.receipt-head{
+  background:var(--ink);
+  color:var(--paper);
+  padding:26px 32px 24px;
+  position:relative;
+  margin-bottom:15px;
+}
+.receipt-head::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-9px;
+  height:18px;
+  background-image: linear-gradient(135deg, var(--ink) 50%, transparent 50%), linear-gradient(45deg, var(--ink) 50%, transparent 50%);
+  background-size: 18px 18px;
+  background-position: 0 0;
+  background-repeat: repeat-x;
+  z-index:2;
+}
+.head-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.head-brandblock{ display:flex; align-items:center; gap:14px; }
+.logo-mark{ flex-shrink:0; }
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--orange);
+  margin:0 0 8px;
+}
+h1.brand{
+  font-family:'Archivo Black',sans-serif;
+  font-size:clamp(24px,3.6vw,36px);
+  line-height:1.05;
+  margin:0 0 4px;
+  letter-spacing:-0.01em;
+}
+.brand-sub{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  color:rgba(250,246,238,0.7);
+  margin:0;
+  line-height:1.5;
+}
+.brand-meta{
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1px solid rgba(250,246,238,0.18);
+  display:flex;
+  flex-wrap:wrap;
+  gap:28px;
+}
+.brand-meta .item{ display:flex; flex-direction:column; gap:3px; }
+.brand-meta .item .k{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9.5px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(250,246,238,0.5);
+}
+.brand-meta .item .v{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  color:var(--paper);
+  font-weight:600;
+}
+
+/* ===== BARCODE DIVIDER: separates header from KPI strip ===== */
+.barcode-divider{
+  background:var(--paper);
+  padding:14px 32px 12px;
+  margin-top:9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+  border-bottom:1px solid var(--line-soft);
+}
+.barcode{
+  height:30px;
+  display:flex;
+  align-items:stretch;
+  gap:0;
+}
+.barcode span{ display:block; background:var(--ink); }
+.barcode-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:.08em;
+  color:var(--ink-soft);
+  white-space:nowrap;
+}
+
+/* ===== KPI STRIP ===== */
+.kpi-strip{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  background:var(--ink);
+  border-top:1px dashed rgba(250,246,238,0.25);
+}
+.kpi{
+  padding:16px 14px 18px;
+  border-right:1px solid rgba(250,246,238,0.16);
+  color:var(--paper);
+}
+.kpi:last-child{border-right:none;}
+.kpi .label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(250,246,238,0.55);
+  margin:0 0 6px;
+}
+.kpi .value{
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:700;
+  font-size:clamp(15px,2vw,22px);
+  color:var(--paper);
+  white-space:nowrap;
+}
+.kpi .value.green{color:#8FD9B6;}
+.kpi .value.orange{color:#F4A876;}
+
+/* ===== NAV TABS ===== */
+.tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0;
+  margin:28px 0 0;
+  border-bottom:2px solid var(--ink);
+}
+.tab-btn{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+  letter-spacing:.03em;
+  background:transparent;
+  border:none;
+  border-top:2px solid transparent;
+  border-left:1px solid var(--line-soft);
+  padding:13px 16px 11px;
+  cursor:pointer;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  transition:background .15s ease, color .15s ease;
+}
+.tab-btn:first-child{border-left:none;}
+.tab-btn .num{
+  font-weight:700;
+  color:var(--orange);
+}
+.tab-btn:hover{ background:var(--paper-dim); color:var(--ink); }
+.tab-btn.active{
+  background:var(--ink);
+  color:var(--paper);
+  border-top-color:var(--orange);
+}
+.tab-btn.active .num{ color:var(--orange); }
+
+/* ===== PANELS ===== */
+.panel{ display:none; padding-top:26px; animation:fadein .25s ease; }
+.panel.active{ display:block; }
+@keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+.panel-head{ margin-bottom:18px; }
+.panel-head .kicker{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--green);
+  margin:0 0 6px;
+}
+.panel-head h2{
+  font-family:'Archivo',sans-serif;
+  font-weight:800;
+  font-size:clamp(20px,2.6vw,28px);
+  margin:0 0 6px;
+  letter-spacing:-0.01em;
+}
+.panel-head p.desc{
+  font-size:14px;
+  color:var(--ink-soft);
+  max-width:720px;
+  margin:0;
+  line-height:1.5;
+}
+
+.grid{
+  display:grid;
+  gap:18px;
+}
+.grid-2{ grid-template-columns:1.3fr 1fr; }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.grid-2-eq{ grid-template-columns:1fr 1fr; }
+
+.card{
+  background:#fff;
+  border:1px solid var(--line-soft);
+  padding:18px 18px 14px;
+  position:relative;
+}
+.card.tinted{ background:var(--paper-dim); }
+.card-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin:0 0 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+}
+.card-title .tag{
+  font-size:10px;
+  background:var(--green-soft);
+  color:var(--green);
+  padding:2px 7px;
+  letter-spacing:0;
+  text-transform:none;
+}
+.chart-wrap{ position:relative; width:100%; }
+.chart-wrap.h220{ height:220px; }
+.chart-wrap.h260{ height:260px; }
+.chart-wrap.h300{ height:300px; }
+.chart-wrap.h340{ height:340px; }
+
+/* ===== FILTER BAR ===== */
+.filterbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin-bottom:18px;
+  padding:12px 14px;
+  background:var(--blue-soft);
+  border:1px solid rgba(61,90,128,0.25);
+}
+.filterbar .flabel{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--blue);
+  margin-right:2px;
+}
+select.fselect{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+  padding:6px 10px;
+  border:1px solid var(--blue);
+  background:#fff;
+  color:var(--ink);
+  cursor:pointer;
+}
+select.fselect:focus{ outline:2px solid var(--orange); outline-offset:1px; }
+
+/* ===== TABLE ===== */
+table.dtable{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+table.dtable th{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  text-align:left;
+  color:var(--ink-soft);
+  border-bottom:2px solid var(--ink);
+  padding:7px 8px;
+}
+table.dtable td{
+  padding:7px 8px;
+  border-bottom:1px solid var(--line-soft);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+}
+table.dtable tr:hover td{ background:var(--paper-dim); }
+table.dtable td.num{ text-align:right; }
+.bar-cell{ display:flex; align-items:center; gap:8px; }
+.bar-track{ flex:1; height:7px; background:var(--paper-dim); position:relative; min-width:40px;}
+.bar-fill{ position:absolute; left:0; top:0; height:100%; background:var(--green); }
+.bar-fill.orange{ background:var(--orange); }
+
+/* ===== INSIGHT BOX ===== */
+.insight{
+  border-left:4px solid var(--orange);
+  background:var(--orange-soft);
+  padding:12px 16px;
+  font-size:13.5px;
+  line-height:1.55;
+  margin-bottom:18px;
+}
+.insight b{ color:var(--red); }
+.insight.green{ border-left-color:var(--green); background:var(--green-soft); }
+.insight.green b{ color:var(--green); }
+.insight .ico{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  display:block;
+  margin-bottom:4px;
+  color:var(--ink-soft);
+}
+
+.legend-row{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); }
+.legend-row .dot{ display:inline-block; width:9px; height:9px; margin-right:5px; vertical-align:middle; }
+
+footer.foot{
+  margin-top:50px;
+  padding-top:18px;
+  border-top:1px dashed var(--line-soft);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--ink-soft);
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+@media (max-width: 880px){
+  .grid-2, .grid-2-eq, .grid-3{ grid-template-columns:1fr; }
+  .kpi-strip{ grid-template-columns:repeat(2,1fr); }
+  .kpi{ border-bottom:1px solid rgba(250,246,238,0.16); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="receipt-head">
+    <div class="head-top">
+      <div class="head-brandblock">
+        <svg class="logo-mark" width="52" height="52" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logotipo Mercado Central">
+          <circle cx="28" cy="28" r="27" fill="#FAF6EE"/>
+          <circle cx="28" cy="28" r="27" fill="none" stroke="#1C1B19" stroke-width="1.4"/>
+          <circle cx="28" cy="28" r="22" fill="#1C1B19"/>
+          <path d="M15.5 21 L15.5 17 Q18.375 14 21.25 17 Q24.125 14 27 17 Q29.875 14 32.75 17 Q35.625 14 38.5 17 L38.5 21 Z" fill="#E0703A"/>
+          <line x1="15.5" y1="21" x2="38.5" y2="21" stroke="#FAF6EE" stroke-width="0.8"/>
+          <text x="28" y="40" font-family="Archivo Black, sans-serif" font-size="15" font-weight="900" fill="#FAF6EE" text-anchor="middle" letter-spacing="0.5">MC</text>
+        </svg>
+        <div>
+          <p class="eyebrow">Mercado Central · Dirección Comercial</p>
+          <h1 class="brand">Panel de Análisis de Ventas</h1>
+        </div>
+      </div>
+    </div>
+    <p class="brand-sub">Detalle transaccional a nivel de ticket y línea de producto · Informe interno</p>
+    <div class="brand-meta">
+      <div class="item"><span class="k">Periodo analizado</span><span class="v">01/03/2024 – 01/04/2024</span></div>
+      <div class="item"><span class="k">Centros</span><span class="v">4</span></div>
+      <div class="item"><span class="k">Referencias</span><span class="v">282 productos</span></div>
+      <div class="item"><span class="k">Fuente</span><span class="v">Detalle de ticket (POS)</span></div>
+    </div>
+  </div>
+
+  <div class="barcode-divider">
+    <div class="barcode" id="barcode"></div>
+    <span class="barcode-label">REF. INFORME · MC-2024-03 · GENERADO A PARTIR DE 153.008 LÍNEAS DE TICKET</span>
+  </div>
+
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <main id="panels"></main>
+
+  <footer class="foot">
+    <span>Mercado Central · Panel de Análisis de Ventas · Marzo 2024</span>
+    <span>Fuente: detalle de ticket (153.008 líneas) · Datos de carácter ilustrativo</span>
+  </footer>
+
+</div>
+
+<script id="data-json" type="application/json">
+{"kpi_global": {"ventas_totales": 890418.32, "n_tickets": 13272, "n_lineas": 153008, "n_productos": 282, "n_centros": 4, "n_secciones": 14, "ticket_medio": 67.09, "ticket_mediano": 63.97, "unidades_totales": 278150, "ahorro_total": 151131.54, "pct_lineas_con_descuento": 0.6677, "fecha_min": "2024-03-01", "fecha_max": "2024-04-01"}, "centros": ["Centro Barcelona-Centro", "Centro Madrid-Norte", "Centro Sevilla-Sur", "Centro Valencia-Este"], "secciones": [{"nombre_seccion": "carne", "unidades": 23463, "importe": 128004.77, "n_productos": 24, "n_subsecciones": 4, "n_lineas": 12865}, {"nombre_seccion": "pesca", "unidades": 14141, "importe": 85051.49, "n_productos": 18, "n_subsecciones": 3, "n_lineas": 7744}, {"nombre_seccion": "congelados", "unidades": 18413, "importe": 74423.34, "n_productos": 21, "n_subsecciones": 4, "n_lineas": 10229}, {"nombre_seccion": "bebidas", "unidades": 28537, "importe": 70981.69, "n_productos": 22, "n_subsecciones": 4, "n_lineas": 15605}, {"nombre_seccion": "charcuteria", "unidades": 21152, "importe": 69381.3, "n_productos": 21, "n_subsecciones": 4, "n_lineas": 11633}, {"nombre_seccion": "fruta", "unidades": 28661, "importe": 61982.51, "n_productos": 25, "n_subsecciones": 4, "n_lineas": 15674}, {"nombre_seccion": "comida preparada", "unidades": 14238, "importe": 61000.91, "n_productos": 15, "n_subsecciones": 3, "n_lineas": 7809}, {"nombre_seccion": "dulce", "unidades": 23652, "importe": 60956.6, "n_productos": 22, "n_subsecciones": 4, "n_lineas": 12997}, {"nombre_seccion": "salado", "unidades": 18701, "importe": 57723.5, "n_productos": 18, "n_subsecciones": 3, "n_lineas": 10425}, {"nombre_seccion": "lacteos", "unidades": 26036, "importe": 54993.41, "n_productos": 25, "n_subsecciones": 4, "n_lineas": 14268}, {"nombre_seccion": "cocina", "unidades": 21068, "importe": 50542.19, "n_productos": 24, "n_subsecciones": 4, "n_lineas": 11697}, {"nombre_seccion": "perfumeria", "unidades": 11775, "importe": 43986.69, "n_productos": 15, "n_subsecciones": 3, "n_lineas": 6472}, {"nombre_seccion": "drogueria", "unidades": 11822, "importe": 39169.21, "n_productos": 18, "n_subsecciones": 3, "n_lineas": 6540}, {"nombre_seccion": "pan", "unidades": 16491, "importe": 32220.71, "n_productos": 17, "n_subsecciones": 3, "n_lineas": 9050}], "fechas": ["2024-03-01", "2024-03-02", "2024-03-03", "2024-03-04", "2024-03-05", "2024-03-06", "2024-03-07", "2024-03-08", "2024-03-09", "2024-03-10", "2024-03-11", "2024-03-12", "2024-03-13", "2024-03-14", "2024-03-15", "2024-03-16", "2024-03-17", "2024-03-18", "2024-03-19", "2024-03-20", "2024-03-21", "2024-03-22", "2024-03-23", "2024-03-24", "2024-03-25", "2024-03-26", "2024-03-27", "2024-03-28", "2024-03-29", "2024-03-30", "2024-03-31", "2024-04-01"], "top_productos_importe": [{"nombre_producto": "Solomillo Ternera 200g", "nombre_seccion": "carne", "nombre_subseccion": "Ternera", "unidades": 1043, "importe": 12853.07, "n_lineas": 571, "pct_descuento": 0.6847635726795096}, {"nombre_producto": "Vino Tinto Rioja 750ml", "nombre_seccion": "bebidas", "nombre_subseccion": "Alcohol", "unidades": 1305, "importe": 10728.03, "n_lineas": 693, "pct_descuento": 0.6406926406926406}, {"nombre_producto": "Chuleton Ternera 400g", "nombre_seccion": "carne", "nombre_subseccion": "Ternera", "unidades": 990, "importe": 10551.93, "n_lineas": 554, "pct_descuento": 0.6787003610108303}, {"nombre_producto": "Aceite Oliva Virgen Extra 1L", "nombre_seccion": "cocina", "nombre_subseccion": "Aceites y vinagres", "unidades": 1047, "importe": 9298.47, "n_lineas": 587, "pct_descuento": 0.6916524701873935}, {"nombre_producto": "Jamon Iberico Lonchas 80g", "nombre_seccion": "charcuteria", "nombre_subseccion": "Jamon", "unidades": 1052, "importe": 8565.73, "n_lineas": 598, "pct_descuento": 0.697324414715719}, {"nombre_producto": "Vino Blanco Rueda 750ml", "nombre_seccion": "bebidas", "nombre_subseccion": "Alcohol", "unidades": 1255, "importe": 8431.4, "n_lineas": 676, "pct_descuento": 0.6760355029585798}, {"nombre_producto": "Rosbif Ternera 250g", "nombre_seccion": "carne", "nombre_subseccion": "Ternera", "unidades": 1045, "importe": 7872.15, "n_lineas": 555, "pct_descuento": 0.6990990990990991}, {"nombre_producto": "Filete Ternera Bandeja 350g", "nombre_seccion": "carne", "nombre_subseccion": "Ternera", "unidades": 966, "importe": 7815.19, "n_lineas": 529, "pct_descuento": 0.6994328922495274}, {"nombre_producto": "Langostinos CP 500g", "nombre_seccion": "pesca", "nombre_subseccion": "Marisco", "unidades": 753, "importe": 7629.68, "n_lineas": 414, "pct_descuento": 0.644927536231884}, {"nombre_producto": "Crema Solar FP50 200ml", "nombre_seccion": "perfumeria", "nombre_subseccion": "Cuidado corporal", "unidades": 848, "importe": 7491.13, "n_lineas": 462, "pct_descuento": 0.6904761904761905}, {"nombre_producto": "Langostinos Congelados 500g", "nombre_seccion": "congelados", "nombre_subseccion": "Pescado congelado", "unidades": 987, "importe": 7201.38, "n_lineas": 528, "pct_descuento": 0.6742424242424242}, {"nombre_producto": "Secreto Iberico 350g", "nombre_seccion": "carne", "nombre_subseccion": "Cerdo", "unidades": 930, "importe": 7187.59, "n_lineas": 518, "pct_descuento": 0.6486486486486487}, {"nombre_producto": "Gambas Frescas 500g", "nombre_seccion": "pesca", "nombre_subseccion": "Marisco", "unidades": 841, "importe": 7120.67, "n_lineas": 444, "pct_descuento": 0.6869369369369369}, {"nombre_producto": "Solomillo Cerdo 300g", "nombre_seccion": "carne", "nombre_subseccion": "Cerdo", "unidades": 1019, "importe": 7016.91, "n_lineas": 558, "pct_descuento": 0.6738351254480287}, {"nombre_producto": "Cava Brut Central 750ml", "nombre_seccion": "bebidas", "nombre_subseccion": "Alcohol", "unidades": 1174, "importe": 6971.11, "n_lineas": 646, "pct_descuento": 0.6656346749226006}, {"nombre_producto": "Vermut Rojo Botella 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Alcohol", "unidades": 1197, "importe": 6847.32, "n_lineas": 653, "pct_descuento": 0.663093415007657}, {"nombre_producto": "Sushi Mix Bandeja 12pz", "nombre_seccion": "comida preparada", "nombre_subseccion": "Platos frios", "unidades": 996, "importe": 6778.87, "n_lineas": 555, "pct_descuento": 0.6720720720720721}, {"nombre_producto": "Aceite Oliva Suave 750ml", "nombre_seccion": "cocina", "nombre_subseccion": "Aceites y vinagres", "unidades": 985, "importe": 6636.59, "n_lineas": 575, "pct_descuento": 0.7060869565217391}, {"nombre_producto": "Danacol Natural Pack 4ud", "nombre_seccion": "dulce", "nombre_subseccion": "Postres", "unidades": 999, "importe": 6618.78, "n_lineas": 547, "pct_descuento": 0.6489945155393053}, {"nombre_producto": "Colacao Original 800g", "nombre_seccion": "dulce", "nombre_subseccion": "Chocolate", "unidades": 1174, "importe": 6192.9, "n_lineas": 651, "pct_descuento": 0.663594470046083}], "bottom_productos_importe": [{"nombre_producto": "Sal Marina Central 1kg", "nombre_seccion": "cocina", "nombre_subseccion": "Especias", "unidades": 685, "importe": 626.55, "n_lineas": 389, "pct_descuento": 0.6426735218508998}, {"nombre_producto": "Agua Con Gas Central 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1380, "importe": 721.2, "n_lineas": 744, "pct_descuento": 0.6841397849462365}, {"nombre_producto": "Macarrones Central 500g", "nombre_seccion": "cocina", "nombre_subseccion": "Pasta y arroz", "unidades": 863, "importe": 773.2, "n_lineas": 493, "pct_descuento": 0.6795131845841785}, {"nombre_producto": "Yogur Natural Central 4ud", "nombre_seccion": "lacteos", "nombre_subseccion": "Yogures", "unidades": 767, "importe": 788.34, "n_lineas": 454, "pct_descuento": 0.6123348017621145}, {"nombre_producto": "Oregano Central 15g", "nombre_seccion": "cocina", "nombre_subseccion": "Especias", "unidades": 789, "importe": 788.66, "n_lineas": 440, "pct_descuento": 0.6727272727272727}, {"nombre_producto": "Agua Central Sin Gas 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1415, "importe": 814.09, "n_lineas": 778, "pct_descuento": 0.6478149100257069}, {"nombre_producto": "Fideos Central 500g", "nombre_seccion": "cocina", "nombre_subseccion": "Pasta y arroz", "unidades": 943, "importe": 842.11, "n_lineas": 499, "pct_descuento": 0.6513026052104208}, {"nombre_producto": "Barra Pan Tradicional", "nombre_seccion": "pan", "nombre_subseccion": "Pan del dia", "unidades": 974, "importe": 875.62, "n_lineas": 533, "pct_descuento": 0.6791744840525328}, {"nombre_producto": "Leche Desnatada Central 1L", "nombre_seccion": "lacteos", "nombre_subseccion": "Leche", "unidades": 1055, "importe": 925.31, "n_lineas": 593, "pct_descuento": 0.6829679595278246}, {"nombre_producto": "Comino Central 40g", "nombre_seccion": "cocina", "nombre_subseccion": "Especias", "unidades": 761, "importe": 925.41, "n_lineas": 423, "pct_descuento": 0.6430260047281324}, {"nombre_producto": "Espaguetis Central 500g", "nombre_seccion": "cocina", "nombre_subseccion": "Pasta y arroz", "unidades": 976, "importe": 958.57, "n_lineas": 509, "pct_descuento": 0.656188605108055}, {"nombre_producto": "Baguette Francesa", "nombre_seccion": "pan", "nombre_subseccion": "Pan del dia", "unidades": 954, "importe": 972.45, "n_lineas": 522, "pct_descuento": 0.6532567049808429}, {"nombre_producto": "Leche Entera Central 1L", "nombre_seccion": "lacteos", "nombre_subseccion": "Leche", "unidades": 1045, "importe": 984.71, "n_lineas": 569, "pct_descuento": 0.6362038664323374}, {"nombre_producto": "Lejia Central 2L", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 711, "importe": 995.46, "n_lineas": 390, "pct_descuento": 0.7282051282051282}, {"nombre_producto": "Film Transparente 30m", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 669, "importe": 1019.43, "n_lineas": 371, "pct_descuento": 0.6792452830188679}, {"nombre_producto": "Pomelo Unidad", "nombre_seccion": "fruta", "nombre_subseccion": "Citricos", "unidades": 1190, "importe": 1051.71, "n_lineas": 648, "pct_descuento": 0.6651234567901234}, {"nombre_producto": "Leche Semidesnatada Central 1L", "nombre_seccion": "lacteos", "nombre_subseccion": "Leche", "unidades": 1126, "importe": 1056.1, "n_lineas": 615, "pct_descuento": 0.6845528455284553}, {"nombre_producto": "Kefir Central 500ml", "nombre_seccion": "lacteos", "nombre_subseccion": "Yogures", "unidades": 806, "importe": 1069.57, "n_lineas": 431, "pct_descuento": 0.6635730858468677}, {"nombre_producto": "Napolitana Chocolate", "nombre_seccion": "pan", "nombre_subseccion": "Bolleria", "unidades": 959, "importe": 1159.31, "n_lineas": 514, "pct_descuento": 0.642023346303502}, {"nombre_producto": "Espinacas Congeladas 600g", "nombre_seccion": "congelados", "nombre_subseccion": "Vegetal congelado", "unidades": 688, "importe": 1160.63, "n_lineas": 390, "pct_descuento": 0.6923076923076923}], "top_productos_unidades": [{"nombre_producto": "Agua San Cabras 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1457, "importe": 1345.84, "n_lineas": 799, "pct_descuento": 0.6708385481852316}, {"nombre_producto": "Zumo Melocoton Central 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Zumos", "unidades": 1456, "importe": 2027.85, "n_lineas": 786, "pct_descuento": 0.6666666666666666}, {"nombre_producto": "Agua Saborizada Limon 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1431, "importe": 1257.2, "n_lineas": 795, "pct_descuento": 0.6742138364779874}, {"nombre_producto": "Zumo Naranja Natural 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Zumos", "unidades": 1422, "importe": 3343.89, "n_lineas": 781, "pct_descuento": 0.6632522407170295}, {"nombre_producto": "Agua Central Sin Gas 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1415, "importe": 814.09, "n_lineas": 778, "pct_descuento": 0.6478149100257069}, {"nombre_producto": "Zumo Pina Central 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Zumos", "unidades": 1394, "importe": 1914.23, "n_lineas": 777, "pct_descuento": 0.6615186615186616}, {"nombre_producto": "Zumo Tomate Central 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Zumos", "unidades": 1385, "importe": 1925.57, "n_lineas": 773, "pct_descuento": 0.6571798188874515}, {"nombre_producto": "Agua Con Gas Central 1.5L", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1380, "importe": 721.2, "n_lineas": 744, "pct_descuento": 0.6841397849462365}, {"nombre_producto": "Agua Mineral Central Pack 6ud", "nombre_seccion": "bebidas", "nombre_subseccion": "Aguas", "unidades": 1376, "importe": 3806.87, "n_lineas": 743, "pct_descuento": 0.6621803499327052}, {"nombre_producto": "Zumo Multifrutas Central 1L", "nombre_seccion": "bebidas", "nombre_subseccion": "Zumos", "unidades": 1371, "importe": 1922.74, "n_lineas": 751, "pct_descuento": 0.6697736351531292}, {"nombre_producto": "Mantequilla Central 250g", "nombre_seccion": "lacteos", "nombre_subseccion": "Mantequilla y nata", "unidades": 1347, "importe": 3170.41, "n_lineas": 737, "pct_descuento": 0.6512890094979648}, {"nombre_producto": "Nata Montar Central 500ml", "nombre_seccion": "lacteos", "nombre_subseccion": "Mantequilla y nata", "unidades": 1306, "importe": 3240.18, "n_lineas": 721, "pct_descuento": 0.6615811373092927}, {"nombre_producto": "Vino Tinto Rioja 750ml", "nombre_seccion": "bebidas", "nombre_subseccion": "Alcohol", "unidades": 1305, "importe": 10728.03, "n_lineas": 693, "pct_descuento": 0.6406926406926406}, {"nombre_producto": "Melocoton Bandeja 4ud", "nombre_seccion": "fruta", "nombre_subseccion": "Hueso", "unidades": 1303, "importe": 3071.57, "n_lineas": 668, "pct_descuento": 0.6691616766467066}, {"nombre_producto": "Nata Cocinar Central 200ml", "nombre_seccion": "lacteos", "nombre_subseccion": "Mantequilla y nata", "unidades": 1302, "importe": 1875.15, "n_lineas": 694, "pct_descuento": 0.6988472622478387}, {"nombre_producto": "Coca-Cola Zero 2L", "nombre_seccion": "bebidas", "nombre_subseccion": "Refrescos", "unidades": 1292, "importe": 2365.8, "n_lineas": 673, "pct_descuento": 0.6567607726597325}, {"nombre_producto": "Margarina Central 400g", "nombre_seccion": "lacteos", "nombre_subseccion": "Mantequilla y nata", "unidades": 1288, "importe": 2196.51, "n_lineas": 707, "pct_descuento": 0.652050919377652}, {"nombre_producto": "Mantequilla Sin Sal 125g", "nombre_seccion": "lacteos", "nombre_subseccion": "Mantequilla y nata", "unidades": 1274, "importe": 2578.59, "n_lineas": 685, "pct_descuento": 0.67007299270073}, {"nombre_producto": "Nispero 500g", "nombre_seccion": "fruta", "nombre_subseccion": "Hueso", "unidades": 1271, "importe": 4039.43, "n_lineas": 680, "pct_descuento": 0.6705882352941176}, {"nombre_producto": "Donuts Glaseados 8ud", "nombre_seccion": "dulce", "nombre_subseccion": "Bolleria dulce", "unidades": 1266, "importe": 4091.95, "n_lineas": 685, "pct_descuento": 0.6802919708029197}], "bottom_productos_unidades": [{"nombre_producto": "Detergente Central Liquido 3L", "nombre_seccion": "drogueria", "nombre_subseccion": "Lavanderia", "unidades": 609, "importe": 3221.8, "n_lineas": 340, "pct_descuento": 0.6235294117647059}, {"nombre_producto": "Suavizante Central 60lav", "nombre_seccion": "drogueria", "nombre_subseccion": "Lavanderia", "unidades": 609, "importe": 2588.39, "n_lineas": 353, "pct_descuento": 0.7025495750708215}, {"nombre_producto": "Bolsas Basura 55L 10ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 614, "importe": 1722.2, "n_lineas": 354, "pct_descuento": 0.6638418079096046}, {"nombre_producto": "Pastillas Lavavajillas 30ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Lavanderia", "unidades": 627, "importe": 3495.75, "n_lineas": 349, "pct_descuento": 0.6446991404011462}, {"nombre_producto": "Limpiacristales Spray 750ml", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 630, "importe": 1466.17, "n_lineas": 345, "pct_descuento": 0.6347826086956522}, {"nombre_producto": "Friegasuelos Lavanda 1.5L", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 632, "importe": 1406.33, "n_lineas": 355, "pct_descuento": 0.6704225352112676}, {"nombre_producto": "Desengrasante Cocina 750ml", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 633, "importe": 1759.22, "n_lineas": 357, "pct_descuento": 0.6246498599439776}, {"nombre_producto": "Limpiahogar Multiusos 1L", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 640, "importe": 1230.14, "n_lineas": 362, "pct_descuento": 0.643646408839779}, {"nombre_producto": "Ariel Cap Medi 19ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Lavanderia", "unidades": 652, "importe": 4152.99, "n_lineas": 347, "pct_descuento": 0.6945244956772334}, {"nombre_producto": "Papel Cocina Central 3ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 654, "importe": 1812.8700000000001, "n_lineas": 386, "pct_descuento": 0.6787564766839378}, {"nombre_producto": "Bolsas Basura 20L 15ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 659, "importe": 1420.57, "n_lineas": 348, "pct_descuento": 0.6609195402298851}, {"nombre_producto": "Papel Higienico Central 12ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 661, "importe": 2591.59, "n_lineas": 357, "pct_descuento": 0.6666666666666666}, {"nombre_producto": "Quitamanchas Vanish 500ml", "nombre_seccion": "drogueria", "nombre_subseccion": "Lavanderia", "unidades": 666, "importe": 2672.62, "n_lineas": 351, "pct_descuento": 0.6894586894586895}, {"nombre_producto": "Fregasuelos Pino 1.5L", "nombre_seccion": "drogueria", "nombre_subseccion": "Limpieza hogar", "unidades": 668, "importe": 1527.82, "n_lineas": 379, "pct_descuento": 0.662269129287599}, {"nombre_producto": "Film Transparente 30m", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 669, "importe": 1019.43, "n_lineas": 371, "pct_descuento": 0.6792452830188679}, {"nombre_producto": "Sal Marina Central 1kg", "nombre_seccion": "cocina", "nombre_subseccion": "Especias", "unidades": 685, "importe": 626.55, "n_lineas": 389, "pct_descuento": 0.6426735218508998}, {"nombre_producto": "Espinacas Congeladas 600g", "nombre_seccion": "congelados", "nombre_subseccion": "Vegetal congelado", "unidades": 688, "importe": 1160.63, "n_lineas": 390, "pct_descuento": 0.6923076923076923}, {"nombre_producto": "Servilletas Central 100ud", "nombre_seccion": "drogueria", "nombre_subseccion": "Papeleria basica", "unidades": 689, "importe": 1163.2, "n_lineas": 387, "pct_descuento": 0.6149870801033591}, {"nombre_producto": "Jabon Manos Central 500ml", "nombre_seccion": "perfumeria", "nombre_subseccion": "Higiene personal", "unidades": 698, "importe": 1185.49, "n_lineas": 385, "pct_descuento": 0.6701298701298701}, {"nombre_producto": "Atun Fresco Rodaja 300g", "nombre_seccion": "pesca", "nombre_subseccion": "Pescado azul", "unidades": 703, "importe": 4774.18, "n_lineas": 398, "pct_descuento": 0.6984924623115578}], "subsecciones": [{"nombre_subseccion": "Ternera", "nombre_seccion": "carne", "unidades": 5946, "importe": 49070.1, "n_productos": 6, "n_lineas": 3266}, {"nombre_subseccion": "Alcohol", "nombre_seccion": "bebidas", "unidades": 7146, "importe": 41809.38, "n_productos": 6, "n_lineas": 3939}, {"nombre_subseccion": "Marisco", "nombre_seccion": "pesca", "unidades": 4643, "importe": 31338.65, "n_productos": 6, "n_lineas": 2584}, {"nombre_subseccion": "Cerdo", "nombre_seccion": "carne", "unidades": 5829, "importe": 30762.12, "n_productos": 6, "n_lineas": 3176}, {"nombre_subseccion": "Pescado blanco", "nombre_seccion": "pesca", "unidades": 4662, "importe": 29390.12, "n_productos": 6, "n_lineas": 2548}, {"nombre_subseccion": "Pescado congelado", "nombre_seccion": "congelados", "unidades": 4569, "importe": 28869.21, "n_productos": 5, "n_lineas": 2528}, {"nombre_subseccion": "Platos calientes", "nombre_seccion": "comida preparada", "unidades": 4678, "importe": 26205.01, "n_productos": 5, "n_lineas": 2594}, {"nombre_subseccion": "Pollo", "nombre_seccion": "carne", "unidades": 5862, "importe": 25732.14, "n_productos": 6, "n_lineas": 3230}, {"nombre_subseccion": "Pescado azul", "nombre_seccion": "pesca", "unidades": 4836, "importe": 24322.72, "n_productos": 6, "n_lineas": 2612}, {"nombre_subseccion": "Aperitivos", "nombre_seccion": "salado", "unidades": 6143, "importe": 24011.06, "n_productos": 6, "n_lineas": 3447}, {"nombre_subseccion": "Elaborados", "nombre_seccion": "carne", "unidades": 5826, "importe": 22440.41, "n_productos": 6, "n_lineas": 3193}, {"nombre_subseccion": "Aceites y vinagres", "nombre_seccion": "cocina", "unidades": 5076, "importe": 22002.69, "n_productos": 5, "n_lineas": 2841}, {"nombre_subseccion": "Jamon", "nombre_seccion": "charcuteria", "unidades": 5401, "importe": 21328.1, "n_productos": 5, "n_lineas": 2988}, {"nombre_subseccion": "Lavanderia", "nombre_seccion": "drogueria", "unidades": 3962, "importe": 21054.21, "n_productos": 6, "n_lineas": 2149}, {"nombre_subseccion": "Conservas saladas", "nombre_seccion": "salado", "unidades": 6277, "importe": 20850.44, "n_productos": 6, "n_lineas": 3518}, {"nombre_subseccion": "Hueso", "nombre_seccion": "fruta", "unidades": 7322, "importe": 20722.42, "n_productos": 6, "n_lineas": 3925}, {"nombre_subseccion": "Carne congelada", "nombre_seccion": "congelados", "unidades": 4455, "importe": 20572.12, "n_productos": 4, "n_lineas": 2483}, {"nombre_subseccion": "Chocolate", "nombre_seccion": "dulce", "unidades": 5780, "importe": 19743.09, "n_productos": 5, "n_lineas": 3231}, {"nombre_subseccion": "Cuidado corporal", "nombre_seccion": "perfumeria", "unidades": 4074, "importe": 19590.02, "n_productos": 5, "n_lineas": 2239}, {"nombre_subseccion": "Platos frios", "nombre_seccion": "comida preparada", "unidades": 4724, "importe": 18717.68, "n_productos": 5, "n_lineas": 2604}, {"nombre_subseccion": "Quesos curados", "nombre_seccion": "charcuteria", "unidades": 5339, "importe": 18040.93, "n_productos": 6, "n_lineas": 2920}, {"nombre_subseccion": "Cuidado del cabello", "nombre_seccion": "perfumeria", "unidades": 3919, "importe": 17041.0, "n_productos": 5, "n_lineas": 2147}, {"nombre_subseccion": "Yogures", "nombre_seccion": "lacteos", "unidades": 6344, "importe": 16658.16, "n_productos": 8, "n_lineas": 3497}, {"nombre_subseccion": "Postres", "nombre_seccion": "dulce", "unidades": 6075, "importe": 16343.27, "n_productos": 6, "n_lineas": 3310}, {"nombre_subseccion": "Precocinados", "nombre_seccion": "congelados", "unidades": 4733, "importe": 16278.1, "n_productos": 6, "n_lineas": 2614}, {"nombre_subseccion": "Embutidos", "nombre_seccion": "charcuteria", "unidades": 5164, "importe": 16181.84, "n_productos": 5, "n_lineas": 2843}, {"nombre_subseccion": "Ensaladas preparadas", "nombre_seccion": "comida preparada", "unidades": 4836, "importe": 16078.22, "n_productos": 5, "n_lineas": 2611}, {"nombre_subseccion": "Especialidades", "nombre_seccion": "pan", "unidades": 5305, "importe": 15047.46, "n_productos": 5, "n_lineas": 2950}, {"nombre_subseccion": "Tropicales", "nombre_seccion": "fruta", "unidades": 7159, "importe": 14922.81, "n_productos": 7, "n_lineas": 3980}, {"nombre_subseccion": "Bolleria dulce", "nombre_seccion": "dulce", "unidades": 5973, "importe": 14372.08, "n_productos": 5, "n_lineas": 3285}, {"nombre_subseccion": "Fiambres", "nombre_seccion": "charcuteria", "unidades": 5248, "importe": 13830.43, "n_productos": 6, "n_lineas": 2882}, {"nombre_subseccion": "Citricos", "nombre_seccion": "fruta", "unidades": 7041, "importe": 13436.07, "n_productos": 6, "n_lineas": 3816}, {"nombre_subseccion": "Mantequilla y nata", "nombre_seccion": "lacteos", "unidades": 6517, "importe": 13060.84, "n_productos": 5, "n_lineas": 3544}, {"nombre_subseccion": "Quesos frescos", "nombre_seccion": "lacteos", "unidades": 6648, "importe": 12983.98, "n_productos": 6, "n_lineas": 3654}, {"nombre_subseccion": "Pepita", "nombre_seccion": "fruta", "unidades": 7139, "importe": 12901.21, "n_productos": 6, "n_lineas": 3953}, {"nombre_subseccion": "Snacks salados", "nombre_seccion": "salado", "unidades": 6281, "importe": 12862.0, "n_productos": 6, "n_lineas": 3460}, {"nombre_subseccion": "Leche", "nombre_seccion": "lacteos", "unidades": 6527, "importe": 12290.43, "n_productos": 6, "n_lineas": 3573}, {"nombre_subseccion": "Salsas", "nombre_seccion": "cocina", "unidades": 5185, "importe": 11749.28, "n_productos": 6, "n_lineas": 2910}, {"nombre_subseccion": "Zumos", "nombre_seccion": "bebidas", "unidades": 7028, "importe": 11134.28, "n_productos": 5, "n_lineas": 3868}, {"nombre_subseccion": "Galletas", "nombre_seccion": "dulce", "unidades": 5824, "importe": 10498.16, "n_productos": 6, "n_lineas": 3171}, {"nombre_subseccion": "Refrescos", "nombre_seccion": "bebidas", "unidades": 7304, "importe": 10092.83, "n_productos": 6, "n_lineas": 3939}, {"nombre_subseccion": "Papeleria basica", "nombre_seccion": "drogueria", "unidades": 3946, "importe": 9729.86, "n_productos": 6, "n_lineas": 2203}, {"nombre_subseccion": "Bolleria", "nombre_seccion": "pan", "unidades": 5473, "importe": 9323.04, "n_productos": 6, "n_lineas": 2968}, {"nombre_subseccion": "Vegetal congelado", "nombre_seccion": "congelados", "unidades": 4656, "importe": 8703.91, "n_productos": 6, "n_lineas": 2604}, {"nombre_subseccion": "Pasta y arroz", "nombre_seccion": "cocina", "unidades": 5527, "importe": 8425.91, "n_productos": 6, "n_lineas": 2965}, {"nombre_subseccion": "Limpieza hogar", "nombre_seccion": "drogueria", "unidades": 3914, "importe": 8385.14, "n_productos": 6, "n_lineas": 2188}, {"nombre_subseccion": "Especias", "nombre_seccion": "cocina", "unidades": 5280, "importe": 8364.31, "n_productos": 7, "n_lineas": 2981}, {"nombre_subseccion": "Aguas", "nombre_seccion": "bebidas", "unidades": 7059, "importe": 7945.2, "n_productos": 5, "n_lineas": 3859}, {"nombre_subseccion": "Pan del dia", "nombre_seccion": "pan", "unidades": 5713, "importe": 7850.21, "n_productos": 6, "n_lineas": 3132}, {"nombre_subseccion": "Higiene personal", "nombre_seccion": "perfumeria", "unidades": 3782, "importe": 7355.67, "n_productos": 5, "n_lineas": 2086}], "top_pairs_by_freq": [{"a": "Aguas", "b": "Pepita", "n_tickets": 971, "pct_tickets": 7.32, "lift": 1.16}, {"a": "Alcohol", "b": "Hueso", "n_tickets": 970, "pct_tickets": 7.31, "lift": 1.16}, {"a": "Citricos", "b": "Tropicales", "n_tickets": 960, "pct_tickets": 7.23, "lift": 1.15}, {"a": "Alcohol", "b": "Tropicales", "n_tickets": 951, "pct_tickets": 7.17, "lift": 1.12}, {"a": "Hueso", "b": "Tropicales", "n_tickets": 951, "pct_tickets": 7.17, "lift": 1.11}, {"a": "Hueso", "b": "Refrescos", "n_tickets": 941, "pct_tickets": 7.09, "lift": 1.11}, {"a": "Aguas", "b": "Hueso", "n_tickets": 935, "pct_tickets": 7.04, "lift": 1.12}, {"a": "Pepita", "b": "Refrescos", "n_tickets": 927, "pct_tickets": 6.98, "lift": 1.09}, {"a": "Pepita", "b": "Tropicales", "n_tickets": 926, "pct_tickets": 6.98, "lift": 1.08}, {"a": "Alcohol", "b": "Refrescos", "n_tickets": 916, "pct_tickets": 6.9, "lift": 1.09}, {"a": "Alcohol", "b": "Citricos", "n_tickets": 913, "pct_tickets": 6.88, "lift": 1.11}, {"a": "Hueso", "b": "Zumos", "n_tickets": 912, "pct_tickets": 6.87, "lift": 1.09}, {"a": "Tropicales", "b": "Zumos", "n_tickets": 911, "pct_tickets": 6.86, "lift": 1.08}, {"a": "Pepita", "b": "Quesos frescos", "n_tickets": 909, "pct_tickets": 6.85, "lift": 1.13}, {"a": "Pepita", "b": "Zumos", "n_tickets": 909, "pct_tickets": 6.85, "lift": 1.08}, {"a": "Citricos", "b": "Pepita", "n_tickets": 908, "pct_tickets": 6.84, "lift": 1.09}, {"a": "Hueso", "b": "Pepita", "n_tickets": 908, "pct_tickets": 6.84, "lift": 1.07}, {"a": "Aguas", "b": "Alcohol", "n_tickets": 908, "pct_tickets": 6.84, "lift": 1.09}, {"a": "Refrescos", "b": "Zumos", "n_tickets": 907, "pct_tickets": 6.83, "lift": 1.08}, {"a": "Aguas", "b": "Refrescos", "n_tickets": 900, "pct_tickets": 6.78, "lift": 1.08}], "top_pairs_by_lift": [{"a": "Aguas", "b": "Pepita", "n_tickets": 971, "pct_tickets": 7.32, "lift": 1.16}, {"a": "Alcohol", "b": "Hueso", "n_tickets": 970, "pct_tickets": 7.31, "lift": 1.16}, {"a": "Pepita", "b": "Yogures", "n_tickets": 892, "pct_tickets": 6.72, "lift": 1.16}, {"a": "Citricos", "b": "Yogures", "n_tickets": 868, "pct_tickets": 6.54, "lift": 1.16}, {"a": "Citricos", "b": "Tropicales", "n_tickets": 960, "pct_tickets": 7.23, "lift": 1.15}, {"a": "Alcohol", "b": "Aperitivos", "n_tickets": 864, "pct_tickets": 6.51, "lift": 1.15}, {"a": "Pepita", "b": "Snacks salados", "n_tickets": 871, "pct_tickets": 6.56, "lift": 1.14}, {"a": "Hueso", "b": "Snacks salados", "n_tickets": 860, "pct_tickets": 6.48, "lift": 1.14}, {"a": "Snacks salados", "b": "Zumos", "n_tickets": 854, "pct_tickets": 6.43, "lift": 1.14}, {"a": "Pepita", "b": "Quesos frescos", "n_tickets": 909, "pct_tickets": 6.85, "lift": 1.13}, {"a": "Conservas saladas", "b": "Hueso", "n_tickets": 870, "pct_tickets": 6.56, "lift": 1.13}, {"a": "Alcohol", "b": "Tropicales", "n_tickets": 951, "pct_tickets": 7.17, "lift": 1.12}, {"a": "Aguas", "b": "Hueso", "n_tickets": 935, "pct_tickets": 7.04, "lift": 1.12}, {"a": "Mantequilla y nata", "b": "Pepita", "n_tickets": 882, "pct_tickets": 6.65, "lift": 1.12}, {"a": "Hueso", "b": "Mantequilla y nata", "n_tickets": 875, "pct_tickets": 6.59, "lift": 1.12}, {"a": "Citricos", "b": "Quesos frescos", "n_tickets": 872, "pct_tickets": 6.57, "lift": 1.12}, {"a": "Aperitivos", "b": "Tropicales", "n_tickets": 855, "pct_tickets": 6.44, "lift": 1.12}, {"a": "Citricos", "b": "Mantequilla y nata", "n_tickets": 854, "pct_tickets": 6.43, "lift": 1.12}, {"a": "Aperitivos", "b": "Pepita", "n_tickets": 853, "pct_tickets": 6.43, "lift": 1.12}, {"a": "Hueso", "b": "Tropicales", "n_tickets": 951, "pct_tickets": 7.17, "lift": 1.11}], "sec_pairs": [{"a": "bebidas", "b": "fruta", "n_tickets": 6127, "pct_tickets": 46.16, "lift": 1.04}, {"a": "fruta", "b": "lacteos", "n_tickets": 5927, "pct_tickets": 44.66, "lift": 1.06}, {"a": "bebidas", "b": "lacteos", "n_tickets": 5884, "pct_tickets": 44.33, "lift": 1.05}, {"a": "bebidas", "b": "carne", "n_tickets": 5607, "pct_tickets": 42.25, "lift": 1.06}, {"a": "carne", "b": "fruta", "n_tickets": 5579, "pct_tickets": 42.04, "lift": 1.06}, {"a": "dulce", "b": "fruta", "n_tickets": 5562, "pct_tickets": 41.91, "lift": 1.05}, {"a": "bebidas", "b": "dulce", "n_tickets": 5561, "pct_tickets": 41.9, "lift": 1.05}, {"a": "carne", "b": "lacteos", "n_tickets": 5327, "pct_tickets": 40.14, "lift": 1.06}, {"a": "dulce", "b": "lacteos", "n_tickets": 5307, "pct_tickets": 39.99, "lift": 1.05}, {"a": "cocina", "b": "fruta", "n_tickets": 5292, "pct_tickets": 39.87, "lift": 1.06}, {"a": "bebidas", "b": "cocina", "n_tickets": 5274, "pct_tickets": 39.74, "lift": 1.05}, {"a": "bebidas", "b": "charcuteria", "n_tickets": 5264, "pct_tickets": 39.66, "lift": 1.06}, {"a": "charcuteria", "b": "fruta", "n_tickets": 5242, "pct_tickets": 39.5, "lift": 1.06}, {"a": "cocina", "b": "lacteos", "n_tickets": 5040, "pct_tickets": 37.97, "lift": 1.05}, {"a": "carne", "b": "dulce", "n_tickets": 5035, "pct_tickets": 37.94, "lift": 1.06}, {"a": "fruta", "b": "salado", "n_tickets": 4970, "pct_tickets": 37.45, "lift": 1.06}, {"a": "bebidas", "b": "salado", "n_tickets": 4952, "pct_tickets": 37.31, "lift": 1.06}, {"a": "charcuteria", "b": "lacteos", "n_tickets": 4946, "pct_tickets": 37.27, "lift": 1.04}, {"a": "congelados", "b": "fruta", "n_tickets": 4898, "pct_tickets": 36.9, "lift": 1.06}, {"a": "bebidas", "b": "congelados", "n_tickets": 4882, "pct_tickets": 36.78, "lift": 1.06}, {"a": "cocina", "b": "dulce", "n_tickets": 4771, "pct_tickets": 35.95, "lift": 1.06}, {"a": "carne", "b": "cocina", "n_tickets": 4758, "pct_tickets": 35.85, "lift": 1.06}, {"a": "charcuteria", "b": "dulce", "n_tickets": 4756, "pct_tickets": 35.83, "lift": 1.06}, {"a": "lacteos", "b": "salado", "n_tickets": 4742, "pct_tickets": 35.73, "lift": 1.06}, {"a": "congelados", "b": "lacteos", "n_tickets": 4738, "pct_tickets": 35.7, "lift": 1.08}, {"a": "carne", "b": "charcuteria", "n_tickets": 4711, "pct_tickets": 35.5, "lift": 1.06}, {"a": "fruta", "b": "pan", "n_tickets": 4500, "pct_tickets": 33.91, "lift": 1.06}, {"a": "bebidas", "b": "pan", "n_tickets": 4479, "pct_tickets": 33.75, "lift": 1.06}, {"a": "charcuteria", "b": "cocina", "n_tickets": 4474, "pct_tickets": 33.71, "lift": 1.05}, {"a": "dulce", "b": "salado", "n_tickets": 4463, "pct_tickets": 33.63, "lift": 1.06}, {"a": "carne", "b": "congelados", "n_tickets": 4452, "pct_tickets": 33.54, "lift": 1.08}, {"a": "carne", "b": "salado", "n_tickets": 4438, "pct_tickets": 33.44, "lift": 1.06}, {"a": "congelados", "b": "dulce", "n_tickets": 4411, "pct_tickets": 33.24, "lift": 1.06}, {"a": "lacteos", "b": "pan", "n_tickets": 4321, "pct_tickets": 32.56, "lift": 1.07}, {"a": "cocina", "b": "salado", "n_tickets": 4279, "pct_tickets": 32.24, "lift": 1.07}, {"a": "cocina", "b": "congelados", "n_tickets": 4220, "pct_tickets": 31.8, "lift": 1.07}, {"a": "charcuteria", "b": "salado", "n_tickets": 4191, "pct_tickets": 31.58, "lift": 1.06}, {"a": "charcuteria", "b": "congelados", "n_tickets": 4184, "pct_tickets": 31.53, "lift": 1.07}, {"a": "carne", "b": "pan", "n_tickets": 4098, "pct_tickets": 30.88, "lift": 1.08}, {"a": "fruta", "b": "pesca", "n_tickets": 4085, "pct_tickets": 30.78, "lift": 1.08}, {"a": "comida preparada", "b": "fruta", "n_tickets": 4071, "pct_tickets": 30.67, "lift": 1.08}, {"a": "dulce", "b": "pan", "n_tickets": 4058, "pct_tickets": 30.58, "lift": 1.06}, {"a": "bebidas", "b": "pesca", "n_tickets": 4007, "pct_tickets": 30.19, "lift": 1.05}, {"a": "bebidas", "b": "comida preparada", "n_tickets": 3976, "pct_tickets": 29.96, "lift": 1.05}, {"a": "congelados", "b": "salado", "n_tickets": 3930, "pct_tickets": 29.61, "lift": 1.07}, {"a": "lacteos", "b": "pesca", "n_tickets": 3873, "pct_tickets": 29.18, "lift": 1.07}, {"a": "comida preparada", "b": "lacteos", "n_tickets": 3847, "pct_tickets": 28.99, "lift": 1.06}, {"a": "cocina", "b": "pan", "n_tickets": 3815, "pct_tickets": 28.74, "lift": 1.05}, {"a": "charcuteria", "b": "pan", "n_tickets": 3799, "pct_tickets": 28.62, "lift": 1.06}, {"a": "dulce", "b": "pesca", "n_tickets": 3678, "pct_tickets": 27.71, "lift": 1.07}, {"a": "carne", "b": "comida preparada", "n_tickets": 3675, "pct_tickets": 27.69, "lift": 1.08}, {"a": "comida preparada", "b": "dulce", "n_tickets": 3653, "pct_tickets": 27.52, "lift": 1.07}, {"a": "carne", "b": "pesca", "n_tickets": 3644, "pct_tickets": 27.46, "lift": 1.07}, {"a": "drogueria", "b": "fruta", "n_tickets": 3607, "pct_tickets": 27.18, "lift": 1.08}, {"a": "pan", "b": "salado", "n_tickets": 3585, "pct_tickets": 27.01, "lift": 1.06}, {"a": "fruta", "b": "perfumeria", "n_tickets": 3577, "pct_tickets": 26.95, "lift": 1.07}, {"a": "bebidas", "b": "drogueria", "n_tickets": 3571, "pct_tickets": 26.91, "lift": 1.06}, {"a": "bebidas", "b": "perfumeria", "n_tickets": 3558, "pct_tickets": 26.81, "lift": 1.06}, {"a": "congelados", "b": "pan", "n_tickets": 3546, "pct_tickets": 26.72, "lift": 1.07}, {"a": "cocina", "b": "pesca", "n_tickets": 3474, "pct_tickets": 26.18, "lift": 1.07}, {"a": "cocina", "b": "comida preparada", "n_tickets": 3467, "pct_tickets": 26.12, "lift": 1.07}, {"a": "charcuteria", "b": "pesca", "n_tickets": 3464, "pct_tickets": 26.1, "lift": 1.08}, {"a": "charcuteria", "b": "comida preparada", "n_tickets": 3446, "pct_tickets": 25.96, "lift": 1.07}, {"a": "drogueria", "b": "lacteos", "n_tickets": 3395, "pct_tickets": 25.58, "lift": 1.06}, {"a": "lacteos", "b": "perfumeria", "n_tickets": 3373, "pct_tickets": 25.41, "lift": 1.06}, {"a": "comida preparada", "b": "salado", "n_tickets": 3259, "pct_tickets": 24.56, "lift": 1.08}, {"a": "carne", "b": "drogueria", "n_tickets": 3240, "pct_tickets": 24.41, "lift": 1.08}, {"a": "carne", "b": "perfumeria", "n_tickets": 3223, "pct_tickets": 24.28, "lift": 1.07}, {"a": "comida preparada", "b": "congelados", "n_tickets": 3221, "pct_tickets": 24.27, "lift": 1.08}, {"a": "pesca", "b": "salado", "n_tickets": 3218, "pct_tickets": 24.25, "lift": 1.06}, {"a": "dulce", "b": "perfumeria", "n_tickets": 3208, "pct_tickets": 24.17, "lift": 1.06}, {"a": "congelados", "b": "pesca", "n_tickets": 3204, "pct_tickets": 24.14, "lift": 1.07}, {"a": "drogueria", "b": "dulce", "n_tickets": 3200, "pct_tickets": 24.11, "lift": 1.06}, {"a": "cocina", "b": "perfumeria", "n_tickets": 3084, "pct_tickets": 23.24, "lift": 1.08}, {"a": "charcuteria", "b": "perfumeria", "n_tickets": 3036, "pct_tickets": 22.88, "lift": 1.07}, {"a": "charcuteria", "b": "drogueria", "n_tickets": 3031, "pct_tickets": 22.84, "lift": 1.07}, {"a": "cocina", "b": "drogueria", "n_tickets": 3028, "pct_tickets": 22.81, "lift": 1.06}, {"a": "pan", "b": "pesca", "n_tickets": 2969, "pct_tickets": 22.37, "lift": 1.08}, {"a": "comida preparada", "b": "pan", "n_tickets": 2940, "pct_tickets": 22.15, "lift": 1.08}, {"a": "perfumeria", "b": "salado", "n_tickets": 2865, "pct_tickets": 21.59, "lift": 1.07}, {"a": "drogueria", "b": "salado", "n_tickets": 2859, "pct_tickets": 21.54, "lift": 1.07}, {"a": "congelados", "b": "drogueria", "n_tickets": 2836, "pct_tickets": 21.37, "lift": 1.08}, {"a": "congelados", "b": "perfumeria", "n_tickets": 2823, "pct_tickets": 21.27, "lift": 1.07}, {"a": "comida preparada", "b": "pesca", "n_tickets": 2661, "pct_tickets": 20.05, "lift": 1.08}, {"a": "drogueria", "b": "pan", "n_tickets": 2638, "pct_tickets": 19.88, "lift": 1.09}, {"a": "pan", "b": "perfumeria", "n_tickets": 2604, "pct_tickets": 19.62, "lift": 1.08}, {"a": "comida preparada", "b": "drogueria", "n_tickets": 2352, "pct_tickets": 17.72, "lift": 1.09}, {"a": "drogueria", "b": "pesca", "n_tickets": 2346, "pct_tickets": 17.68, "lift": 1.08}, {"a": "perfumeria", "b": "pesca", "n_tickets": 2336, "pct_tickets": 17.6, "lift": 1.08}, {"a": "comida preparada", "b": "perfumeria", "n_tickets": 2327, "pct_tickets": 17.53, "lift": 1.08}, {"a": "drogueria", "b": "perfumeria", "n_tickets": 2073, "pct_tickets": 15.62, "lift": 1.08}], "por_centro_ticket": [{"nombre_centro": "Centro Sevilla-Sur", "n_tickets": 3321, "ticket_medio": 67.82735320686541, "ticket_mediano": 64.62, "cesta_media_lineas": 11.574525745257452}, {"nombre_centro": "Centro Madrid-Norte", "n_tickets": 3276, "ticket_medio": 67.05407203907204, "ticket_mediano": 63.295, "cesta_media_lineas": 11.515262515262515}, {"nombre_centro": "Centro Valencia-Este", "n_tickets": 3291, "ticket_medio": 66.91138255849286, "ticket_mediano": 64.13, "cesta_media_lineas": 11.51686417502279}, {"nombre_centro": "Centro Barcelona-Centro", "n_tickets": 3384, "ticket_medio": 66.57481678486998, "ticket_mediano": 63.815, "cesta_media_lineas": 11.507978723404255}], "hora_centro": [{"nombre_centro": "Centro Barcelona-Centro", "hora_num": 9, "importe": 18527.93, "n_tickets": 281}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 10, "importe": 18472.57, "n_tickets": 270}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 11, "importe": 17137.64, "n_tickets": 253}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 12, "importe": 15982.97, "n_tickets": 255}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 13, "importe": 18643.49, "n_tickets": 285}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 14, "importe": 16972.56, "n_tickets": 250}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 15, "importe": 18105.86, "n_tickets": 258}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 16, "importe": 17768.58, "n_tickets": 248}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 17, "importe": 17494.73, "n_tickets": 253}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 18, "importe": 17385.58, "n_tickets": 267}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 19, "importe": 15521.66, "n_tickets": 248}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 20, "importe": 17748.98, "n_tickets": 276}, {"nombre_centro": "Centro Barcelona-Centro", "hora_num": 21, "importe": 15526.63, "n_tickets": 240}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 9, "importe": 15050.35, "n_tickets": 226}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 10, "importe": 18784.97, "n_tickets": 262}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 11, "importe": 17070.99, "n_tickets": 255}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 12, "importe": 16329.77, "n_tickets": 229}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 13, "importe": 16950.12, "n_tickets": 258}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 14, "importe": 15337.06, "n_tickets": 234}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 15, "importe": 17947.95, "n_tickets": 263}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 16, "importe": 17002.63, "n_tickets": 255}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 17, "importe": 17260.15, "n_tickets": 268}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 18, "importe": 16334.82, "n_tickets": 251}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 19, "importe": 17372.17, "n_tickets": 249}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 20, "importe": 17132.28, "n_tickets": 261}, {"nombre_centro": "Centro Madrid-Norte", "hora_num": 21, "importe": 17095.88, "n_tickets": 265}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 9, "importe": 16287.28, "n_tickets": 244}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 10, "importe": 17143.47, "n_tickets": 254}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 11, "importe": 16387.77, "n_tickets": 240}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 12, "importe": 17336.5, "n_tickets": 266}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 13, "importe": 18997.17, "n_tickets": 271}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 14, "importe": 17048.7, "n_tickets": 246}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 15, "importe": 18096.11, "n_tickets": 267}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 16, "importe": 16148.52, "n_tickets": 233}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 17, "importe": 18260.52, "n_tickets": 268}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 18, "importe": 17337.83, "n_tickets": 261}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 19, "importe": 17608.15, "n_tickets": 254}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 20, "importe": 16422.41, "n_tickets": 240}, {"nombre_centro": "Centro Sevilla-Sur", "hora_num": 21, "importe": 18180.21, "n_tickets": 277}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 9, "importe": 15773.21, "n_tickets": 239}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 10, "importe": 17837.45, "n_tickets": 270}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 11, "importe": 16646.48, "n_tickets": 241}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 12, "importe": 16215.13, "n_tickets": 240}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 13, "importe": 16741.38, "n_tickets": 251}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 14, "importe": 19114.51, "n_tickets": 280}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 15, "importe": 16824.81, "n_tickets": 251}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 16, "importe": 18151.06, "n_tickets": 279}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 17, "importe": 15066.6, "n_tickets": 223}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 18, "importe": 17048.18, "n_tickets": 252}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 19, "importe": 19371.93, "n_tickets": 288}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 20, "importe": 15068.91, "n_tickets": 226}, {"nombre_centro": "Centro Valencia-Este", "hora_num": 21, "importe": 16345.71, "n_tickets": 251}], "hora_global": [{"hora_num": 9, "importe": 65638.77, "n_tickets": 990}, {"hora_num": 10, "importe": 72238.46, "n_tickets": 1056}, {"hora_num": 11, "importe": 67242.88, "n_tickets": 989}, {"hora_num": 12, "importe": 65864.37, "n_tickets": 990}, {"hora_num": 13, "importe": 71332.16, "n_tickets": 1065}, {"hora_num": 14, "importe": 68472.83, "n_tickets": 1010}, {"hora_num": 15, "importe": 70974.73, "n_tickets": 1039}, {"hora_num": 16, "importe": 69070.79, "n_tickets": 1015}, {"hora_num": 17, "importe": 68082.0, "n_tickets": 1012}, {"hora_num": 18, "importe": 68106.41, "n_tickets": 1031}, {"hora_num": 19, "importe": 69873.91, "n_tickets": 1039}, {"hora_num": 20, "importe": 66372.58, "n_tickets": 1003}, {"hora_num": 21, "importe": 67148.43, "n_tickets": 1033}], "hora_pico_resumen": [{"centro": "Centro Barcelona-Centro", "hora_pico": 13, "importe_hora_pico": 18643.49}, {"centro": "Centro Madrid-Norte", "hora_pico": 10, "importe_hora_pico": 18784.97}, {"centro": "Centro Sevilla-Sur", "hora_pico": 13, "importe_hora_pico": 18997.17}, {"centro": "Centro Valencia-Este", "hora_pico": 19, "importe_hora_pico": 19371.93}], "promo_analysis": [{"tipo_descuento": "Sin descuento", "n_lineas": 50841, "unidades": 92476, "importe_final": 344290.51, "importe_sin_descuento": 344290.51, "ahorro_total": 3.5083047578154947e-14, "pct_ahorro_sobre_pvp": 1.018995486635834e-19, "unidades_por_linea": 1.8189256702267855}, {"tipo_descuento": "2a-50%", "n_lineas": 34416, "unidades": 62671, "importe_final": 164822.7, "importe_sin_descuento": 234897.23, "ahorro_total": 70074.53, "pct_ahorro_sobre_pvp": 0.2983199503885167, "unidades_por_linea": 1.8209844258484427}, {"tipo_descuento": "5% oferta", "n_lineas": 16775, "unidades": 30487, "importe_final": 108728.39, "importe_sin_descuento": 114457.04, "ahorro_total": 5728.65, "pct_ahorro_sobre_pvp": 0.05005065656074978, "unidades_por_linea": 1.8174068554396423}, {"tipo_descuento": "15% oferta", "n_lineas": 17059, "unidades": 30962, "importe_final": 99394.83, "importe_sin_descuento": 116939.71, "ahorro_total": 17544.88, "pct_ahorro_sobre_pvp": 0.15003355147708164, "unidades_por_linea": 1.8149950172929246}, {"tipo_descuento": "20% oferta", "n_lineas": 16996, "unidades": 30859, "importe_final": 92144.09, "importe_sin_descuento": 115181.84, "ahorro_total": 23037.75, "pct_ahorro_sobre_pvp": 0.20001199841919526, "unidades_por_linea": 1.815662508825606}, {"tipo_descuento": "2x1combi", "n_lineas": 16921, "unidades": 30695, "importe_final": 81037.8, "importe_sin_descuento": 115783.53, "ahorro_total": 34745.73, "pct_ahorro_sobre_pvp": 0.3000921633672769, "unidades_por_linea": 1.8140180840375864}], "comparativa_descuento": [{"tiene_descuento": false, "n_lineas": 50841, "unidades_media": 1.8189256702267855, "importe_medio_linea": 6.771906728821227}, {"tiene_descuento": true, "n_lineas": 102167, "unidades_media": 1.8173578552761656, "importe_medio_linea": 5.345442363972712}], "promo_seccion": [{"nombre_seccion": "carne", "importe_final": 128004.77, "ahorro_total": 21737.51, "pct_lineas_con_descuento": 0.6731441896618733, "pct_ahorro_sobre_venta": 0.16981796850226752}, {"nombre_seccion": "pesca", "importe_final": 85051.49, "ahorro_total": 14405.94, "pct_lineas_con_descuento": 0.6753615702479339, "pct_ahorro_sobre_venta": 0.16937904321252925}, {"nombre_seccion": "congelados", "importe_final": 74423.34, "ahorro_total": 12607.91, "pct_lineas_con_descuento": 0.6706422915240982, "pct_ahorro_sobre_venta": 0.16940801098150124}, {"nombre_seccion": "bebidas", "importe_final": 70981.69, "ahorro_total": 12079.5, "pct_lineas_con_descuento": 0.6650432553668696, "pct_ahorro_sobre_venta": 0.1701776894858378}, {"nombre_seccion": "charcuteria", "importe_final": 69381.3, "ahorro_total": 11825.6, "pct_lineas_con_descuento": 0.6809077624000688, "pct_ahorro_sobre_venta": 0.17044362097568078}, {"nombre_seccion": "fruta", "importe_final": 61982.51, "ahorro_total": 10449.68, "pct_lineas_con_descuento": 0.6658160010207987, "pct_ahorro_sobre_venta": 0.16859078472298072}, {"nombre_seccion": "comida preparada", "importe_final": 61000.91, "ahorro_total": 10257.99, "pct_lineas_con_descuento": 0.6633371750544244, "pct_ahorro_sobre_venta": 0.1681612618565854}, {"nombre_seccion": "dulce", "importe_final": 60956.6, "ahorro_total": 10235.68, "pct_lineas_con_descuento": 0.661998922828345, "pct_ahorro_sobre_venta": 0.1679175019604112}, {"nombre_seccion": "salado", "importe_final": 57723.5, "ahorro_total": 9748.74, "pct_lineas_con_descuento": 0.6584172661870503, "pct_ahorro_sobre_venta": 0.16888684851057195}, {"nombre_seccion": "lacteos", "importe_final": 54993.41, "ahorro_total": 9406.789999999999, "pct_lineas_con_descuento": 0.6644939725259321, "pct_ahorro_sobre_venta": 0.17105304071887883}, {"nombre_seccion": "cocina", "importe_final": 50542.19, "ahorro_total": 8751.78, "pct_lineas_con_descuento": 0.6662392066341797, "pct_ahorro_sobre_venta": 0.1731579102528007}, {"nombre_seccion": "perfumeria", "importe_final": 43986.69, "ahorro_total": 7463.0199999999995, "pct_lineas_con_descuento": 0.6778430160692213, "pct_ahorro_sobre_venta": 0.16966541469703675}, {"nombre_seccion": "drogueria", "importe_final": 39169.21, "ahorro_total": 6710.91, "pct_lineas_con_descuento": 0.6646788990825688, "pct_ahorro_sobre_venta": 0.1713312573830312}, {"nombre_seccion": "pan", "importe_final": 32220.71, "ahorro_total": 5450.49, "pct_lineas_con_descuento": 0.6658563535911602, "pct_ahorro_sobre_venta": 0.16916107683536458}], "promo_tipo_seccion": [{"nombre_seccion": "bebidas", "tipo_descuento": "15% oferta", "n_lineas": 1754, "importe": 8421.08}, {"nombre_seccion": "bebidas", "tipo_descuento": "20% oferta", "n_lineas": 1750, "importe": 7471.96}, {"nombre_seccion": "bebidas", "tipo_descuento": "2a-50%", "n_lineas": 3423, "importe": 12210.12}, {"nombre_seccion": "bebidas", "tipo_descuento": "2x1combi", "n_lineas": 1787, "importe": 6717.18}, {"nombre_seccion": "bebidas", "tipo_descuento": "5% oferta", "n_lineas": 1664, "importe": 8228.64}, {"nombre_seccion": "carne", "tipo_descuento": "15% oferta", "n_lineas": 1491, "importe": 14362.65}, {"nombre_seccion": "carne", "tipo_descuento": "20% oferta", "n_lineas": 1408, "importe": 12903.69}, {"nombre_seccion": "carne", "tipo_descuento": "2a-50%", "n_lineas": 2907, "importe": 24310.59}, {"nombre_seccion": "carne", "tipo_descuento": "2x1combi", "n_lineas": 1439, "importe": 11469.46}, {"nombre_seccion": "carne", "tipo_descuento": "5% oferta", "n_lineas": 1415, "importe": 15534.05}, {"nombre_seccion": "charcuteria", "tipo_descuento": "15% oferta", "n_lineas": 1360, "importe": 8178.2}, {"nombre_seccion": "charcuteria", "tipo_descuento": "20% oferta", "n_lineas": 1336, "importe": 7492.91}, {"nombre_seccion": "charcuteria", "tipo_descuento": "2a-50%", "n_lineas": 2631, "importe": 13118.67}, {"nombre_seccion": "charcuteria", "tipo_descuento": "2x1combi", "n_lineas": 1249, "importe": 5996.34}, {"nombre_seccion": "charcuteria", "tipo_descuento": "5% oferta", "n_lineas": 1345, "importe": 9069.64}, {"nombre_seccion": "cocina", "tipo_descuento": "15% oferta", "n_lineas": 1268, "importe": 5533.01}, {"nombre_seccion": "cocina", "tipo_descuento": "20% oferta", "n_lineas": 1344, "importe": 5449.71}, {"nombre_seccion": "cocina", "tipo_descuento": "2a-50%", "n_lineas": 2595, "importe": 9474.67}, {"nombre_seccion": "cocina", "tipo_descuento": "2x1combi", "n_lineas": 1331, "importe": 4766.81}, {"nombre_seccion": "cocina", "tipo_descuento": "5% oferta", "n_lineas": 1255, "importe": 6349.32}, {"nombre_seccion": "comida preparada", "tipo_descuento": "15% oferta", "n_lineas": 847, "importe": 6715.06}, {"nombre_seccion": "comida preparada", "tipo_descuento": "20% oferta", "n_lineas": 888, "importe": 6472.12}, {"nombre_seccion": "comida preparada", "tipo_descuento": "2a-50%", "n_lineas": 1677, "importe": 10655.28}, {"nombre_seccion": "comida preparada", "tipo_descuento": "2x1combi", "n_lineas": 872, "importe": 5664.57}, {"nombre_seccion": "comida preparada", "tipo_descuento": "5% oferta", "n_lineas": 896, "importe": 7536.13}, {"nombre_seccion": "congelados", "tipo_descuento": "15% oferta", "n_lineas": 1140, "importe": 8305.34}, {"nombre_seccion": "congelados", "tipo_descuento": "20% oferta", "n_lineas": 1147, "importe": 7763.98}, {"nombre_seccion": "congelados", "tipo_descuento": "2a-50%", "n_lineas": 2350, "importe": 13880.43}, {"nombre_seccion": "congelados", "tipo_descuento": "2x1combi", "n_lineas": 1100, "importe": 6807.94}, {"nombre_seccion": "congelados", "tipo_descuento": "5% oferta", "n_lineas": 1123, "importe": 9172.35}, {"nombre_seccion": "drogueria", "tipo_descuento": "15% oferta", "n_lineas": 741, "importe": 4167.04}, {"nombre_seccion": "drogueria", "tipo_descuento": "20% oferta", "n_lineas": 715, "importe": 3940.11}, {"nombre_seccion": "drogueria", "tipo_descuento": "2a-50%", "n_lineas": 1469, "importe": 7119.71}, {"nombre_seccion": "drogueria", "tipo_descuento": "2x1combi", "n_lineas": 726, "importe": 3793.29}, {"nombre_seccion": "drogueria", "tipo_descuento": "5% oferta", "n_lineas": 696, "importe": 4680.79}, {"nombre_seccion": "dulce", "tipo_descuento": "15% oferta", "n_lineas": 1404, "importe": 6565.42}, {"nombre_seccion": "dulce", "tipo_descuento": "20% oferta", "n_lineas": 1448, "importe": 6307.3}, {"nombre_seccion": "dulce", "tipo_descuento": "2a-50%", "n_lineas": 2940, "importe": 11324.85}, {"nombre_seccion": "dulce", "tipo_descuento": "2x1combi", "n_lineas": 1402, "importe": 5427.03}, {"nombre_seccion": "dulce", "tipo_descuento": "5% oferta", "n_lineas": 1410, "importe": 7150.33}, {"nombre_seccion": "fruta", "tipo_descuento": "15% oferta", "n_lineas": 1712, "importe": 6578.82}, {"nombre_seccion": "fruta", "tipo_descuento": "20% oferta", "n_lineas": 1715, "importe": 6118.66}, {"nombre_seccion": "fruta", "tipo_descuento": "2a-50%", "n_lineas": 3552, "importe": 11903.0}, {"nombre_seccion": "fruta", "tipo_descuento": "2x1combi", "n_lineas": 1747, "importe": 5683.18}, {"nombre_seccion": "fruta", "tipo_descuento": "5% oferta", "n_lineas": 1710, "importe": 7553.12}, {"nombre_seccion": "lacteos", "tipo_descuento": "15% oferta", "n_lineas": 1605, "importe": 6383.29}, {"nombre_seccion": "lacteos", "tipo_descuento": "20% oferta", "n_lineas": 1539, "importe": 5539.93}, {"nombre_seccion": "lacteos", "tipo_descuento": "2a-50%", "n_lineas": 3247, "importe": 10138.32}, {"nombre_seccion": "lacteos", "tipo_descuento": "2x1combi", "n_lineas": 1549, "importe": 4801.04}, {"nombre_seccion": "lacteos", "tipo_descuento": "5% oferta", "n_lineas": 1541, "importe": 6344.36}, {"nombre_seccion": "pan", "tipo_descuento": "15% oferta", "n_lineas": 993, "importe": 3488.79}, {"nombre_seccion": "pan", "tipo_descuento": "20% oferta", "n_lineas": 1005, "importe": 3439.84}, {"nombre_seccion": "pan", "tipo_descuento": "2a-50%", "n_lineas": 2042, "importe": 5976.06}, {"nombre_seccion": "pan", "tipo_descuento": "2x1combi", "n_lineas": 975, "importe": 2826.49}, {"nombre_seccion": "pan", "tipo_descuento": "5% oferta", "n_lineas": 1011, "importe": 4012.24}, {"nombre_seccion": "perfumeria", "tipo_descuento": "15% oferta", "n_lineas": 724, "importe": 5145.87}, {"nombre_seccion": "perfumeria", "tipo_descuento": "20% oferta", "n_lineas": 752, "importe": 4710.84}, {"nombre_seccion": "perfumeria", "tipo_descuento": "2a-50%", "n_lineas": 1442, "importe": 7985.13}, {"nombre_seccion": "perfumeria", "tipo_descuento": "2x1combi", "n_lineas": 795, "importe": 4415.78}, {"nombre_seccion": "perfumeria", "tipo_descuento": "5% oferta", "n_lineas": 674, "importe": 5050.88}, {"nombre_seccion": "pesca", "tipo_descuento": "15% oferta", "n_lineas": 867, "importe": 9310.33}, {"nombre_seccion": "pesca", "tipo_descuento": "20% oferta", "n_lineas": 852, "importe": 8832.87}, {"nombre_seccion": "pesca", "tipo_descuento": "2a-50%", "n_lineas": 1773, "importe": 16107.6}, {"nombre_seccion": "pesca", "tipo_descuento": "2x1combi", "n_lineas": 828, "importe": 7466.71}, {"nombre_seccion": "pesca", "tipo_descuento": "5% oferta", "n_lineas": 910, "importe": 11069.62}, {"nombre_seccion": "salado", "tipo_descuento": "15% oferta", "n_lineas": 1153, "importe": 6239.93}, {"nombre_seccion": "salado", "tipo_descuento": "20% oferta", "n_lineas": 1097, "importe": 5700.17}, {"nombre_seccion": "salado", "tipo_descuento": "2a-50%", "n_lineas": 2368, "importe": 10618.27}, {"nombre_seccion": "salado", "tipo_descuento": "2x1combi", "n_lineas": 1121, "importe": 5201.98}, {"nombre_seccion": "salado", "tipo_descuento": "5% oferta", "n_lineas": 1125, "importe": 6976.92}], "serie_diaria_centro": [{"fecha_str": "2024-03-01", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8812.01}, {"fecha_str": "2024-03-01", "nombre_centro": "Centro Madrid-Norte", "total_linea": 9971.89}, {"fecha_str": "2024-03-01", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6995.49}, {"fecha_str": "2024-03-01", "nombre_centro": "Centro Valencia-Este", "total_linea": 6180.67}, {"fecha_str": "2024-03-02", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6483.81}, {"fecha_str": "2024-03-02", "nombre_centro": "Centro Madrid-Norte", "total_linea": 7721.71}, {"fecha_str": "2024-03-02", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 8660.59}, {"fecha_str": "2024-03-02", "nombre_centro": "Centro Valencia-Este", "total_linea": 6327.51}, {"fecha_str": "2024-03-03", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6047.43}, {"fecha_str": "2024-03-03", "nombre_centro": "Centro Madrid-Norte", "total_linea": 7558.16}, {"fecha_str": "2024-03-03", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5708.25}, {"fecha_str": "2024-03-03", "nombre_centro": "Centro Valencia-Este", "total_linea": 10600.53}, {"fecha_str": "2024-03-04", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 4394.85}, {"fecha_str": "2024-03-04", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4372.01}, {"fecha_str": "2024-03-04", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5538.38}, {"fecha_str": "2024-03-04", "nombre_centro": "Centro Valencia-Este", "total_linea": 6318.88}, {"fecha_str": "2024-03-05", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 5125.61}, {"fecha_str": "2024-03-05", "nombre_centro": "Centro Madrid-Norte", "total_linea": 6987.38}, {"fecha_str": "2024-03-05", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 9385.17}, {"fecha_str": "2024-03-05", "nombre_centro": "Centro Valencia-Este", "total_linea": 7790.79}, {"fecha_str": "2024-03-06", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 3997.82}, {"fecha_str": "2024-03-06", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5212.24}, {"fecha_str": "2024-03-06", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7164.31}, {"fecha_str": "2024-03-06", "nombre_centro": "Centro Valencia-Este", "total_linea": 6874.56}, {"fecha_str": "2024-03-07", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6529.8}, {"fecha_str": "2024-03-07", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8343.06}, {"fecha_str": "2024-03-07", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6383.74}, {"fecha_str": "2024-03-07", "nombre_centro": "Centro Valencia-Este", "total_linea": 7752.9}, {"fecha_str": "2024-03-08", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8681.43}, {"fecha_str": "2024-03-08", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8796.7}, {"fecha_str": "2024-03-08", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5027.0}, {"fecha_str": "2024-03-08", "nombre_centro": "Centro Valencia-Este", "total_linea": 5181.46}, {"fecha_str": "2024-03-09", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 5497.28}, {"fecha_str": "2024-03-09", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5883.38}, {"fecha_str": "2024-03-09", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 10668.53}, {"fecha_str": "2024-03-09", "nombre_centro": "Centro Valencia-Este", "total_linea": 9887.7}, {"fecha_str": "2024-03-10", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6967.34}, {"fecha_str": "2024-03-10", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5902.03}, {"fecha_str": "2024-03-10", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 4913.26}, {"fecha_str": "2024-03-10", "nombre_centro": "Centro Valencia-Este", "total_linea": 8432.88}, {"fecha_str": "2024-03-11", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8916.49}, {"fecha_str": "2024-03-11", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8662.04}, {"fecha_str": "2024-03-11", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7543.35}, {"fecha_str": "2024-03-11", "nombre_centro": "Centro Valencia-Este", "total_linea": 5582.81}, {"fecha_str": "2024-03-12", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6744.3}, {"fecha_str": "2024-03-12", "nombre_centro": "Centro Madrid-Norte", "total_linea": 7575.2}, {"fecha_str": "2024-03-12", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 8771.95}, {"fecha_str": "2024-03-12", "nombre_centro": "Centro Valencia-Este", "total_linea": 5614.99}, {"fecha_str": "2024-03-13", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 5560.95}, {"fecha_str": "2024-03-13", "nombre_centro": "Centro Madrid-Norte", "total_linea": 6393.52}, {"fecha_str": "2024-03-13", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 8896.52}, {"fecha_str": "2024-03-13", "nombre_centro": "Centro Valencia-Este", "total_linea": 6708.3}, {"fecha_str": "2024-03-14", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 7695.88}, {"fecha_str": "2024-03-14", "nombre_centro": "Centro Madrid-Norte", "total_linea": 9130.14}, {"fecha_str": "2024-03-14", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6787.35}, {"fecha_str": "2024-03-14", "nombre_centro": "Centro Valencia-Este", "total_linea": 6501.06}, {"fecha_str": "2024-03-15", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 7728.15}, {"fecha_str": "2024-03-15", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8008.79}, {"fecha_str": "2024-03-15", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5435.44}, {"fecha_str": "2024-03-15", "nombre_centro": "Centro Valencia-Este", "total_linea": 7261.71}, {"fecha_str": "2024-03-16", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 9934.92}, {"fecha_str": "2024-03-16", "nombre_centro": "Centro Madrid-Norte", "total_linea": 7376.58}, {"fecha_str": "2024-03-16", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6883.18}, {"fecha_str": "2024-03-16", "nombre_centro": "Centro Valencia-Este", "total_linea": 5118.35}, {"fecha_str": "2024-03-17", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 10111.97}, {"fecha_str": "2024-03-17", "nombre_centro": "Centro Madrid-Norte", "total_linea": 3840.73}, {"fecha_str": "2024-03-17", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5787.6}, {"fecha_str": "2024-03-17", "nombre_centro": "Centro Valencia-Este", "total_linea": 5402.14}, {"fecha_str": "2024-03-18", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6816.98}, {"fecha_str": "2024-03-18", "nombre_centro": "Centro Madrid-Norte", "total_linea": 10389.0}, {"fecha_str": "2024-03-18", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 4771.75}, {"fecha_str": "2024-03-18", "nombre_centro": "Centro Valencia-Este", "total_linea": 5784.94}, {"fecha_str": "2024-03-19", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 4957.84}, {"fecha_str": "2024-03-19", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4891.72}, {"fecha_str": "2024-03-19", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6013.59}, {"fecha_str": "2024-03-19", "nombre_centro": "Centro Valencia-Este", "total_linea": 4555.97}, {"fecha_str": "2024-03-20", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 7893.04}, {"fecha_str": "2024-03-20", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8264.09}, {"fecha_str": "2024-03-20", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5001.6}, {"fecha_str": "2024-03-20", "nombre_centro": "Centro Valencia-Este", "total_linea": 9941.76}, {"fecha_str": "2024-03-21", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 5997.79}, {"fecha_str": "2024-03-21", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4752.59}, {"fecha_str": "2024-03-21", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7331.46}, {"fecha_str": "2024-03-21", "nombre_centro": "Centro Valencia-Este", "total_linea": 8503.39}, {"fecha_str": "2024-03-22", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 4514.91}, {"fecha_str": "2024-03-22", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4689.96}, {"fecha_str": "2024-03-22", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7615.6}, {"fecha_str": "2024-03-22", "nombre_centro": "Centro Valencia-Este", "total_linea": 9973.25}, {"fecha_str": "2024-03-23", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 4689.87}, {"fecha_str": "2024-03-23", "nombre_centro": "Centro Madrid-Norte", "total_linea": 9399.79}, {"fecha_str": "2024-03-23", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5970.65}, {"fecha_str": "2024-03-23", "nombre_centro": "Centro Valencia-Este", "total_linea": 6259.82}, {"fecha_str": "2024-03-24", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8324.44}, {"fecha_str": "2024-03-24", "nombre_centro": "Centro Madrid-Norte", "total_linea": 3681.65}, {"fecha_str": "2024-03-24", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 8471.8}, {"fecha_str": "2024-03-24", "nombre_centro": "Centro Valencia-Este", "total_linea": 7583.7}, {"fecha_str": "2024-03-25", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 6963.73}, {"fecha_str": "2024-03-25", "nombre_centro": "Centro Madrid-Norte", "total_linea": 10289.92}, {"fecha_str": "2024-03-25", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7883.84}, {"fecha_str": "2024-03-25", "nombre_centro": "Centro Valencia-Este", "total_linea": 4251.05}, {"fecha_str": "2024-03-26", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 7831.27}, {"fecha_str": "2024-03-26", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4546.83}, {"fecha_str": "2024-03-26", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 6526.47}, {"fecha_str": "2024-03-26", "nombre_centro": "Centro Valencia-Este", "total_linea": 8752.23}, {"fecha_str": "2024-03-27", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 4523.06}, {"fecha_str": "2024-03-27", "nombre_centro": "Centro Madrid-Norte", "total_linea": 4694.1}, {"fecha_str": "2024-03-27", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 9570.19}, {"fecha_str": "2024-03-27", "nombre_centro": "Centro Valencia-Este", "total_linea": 5978.46}, {"fecha_str": "2024-03-28", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8378.64}, {"fecha_str": "2024-03-28", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5450.26}, {"fecha_str": "2024-03-28", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 4439.31}, {"fecha_str": "2024-03-28", "nombre_centro": "Centro Valencia-Este", "total_linea": 5163.07}, {"fecha_str": "2024-03-29", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 9620.75}, {"fecha_str": "2024-03-29", "nombre_centro": "Centro Madrid-Norte", "total_linea": 7397.11}, {"fecha_str": "2024-03-29", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 7647.16}, {"fecha_str": "2024-03-29", "nombre_centro": "Centro Valencia-Este", "total_linea": 7428.67}, {"fecha_str": "2024-03-30", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 8563.79}, {"fecha_str": "2024-03-30", "nombre_centro": "Centro Madrid-Norte", "total_linea": 8250.54}, {"fecha_str": "2024-03-30", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 5105.48}, {"fecha_str": "2024-03-30", "nombre_centro": "Centro Valencia-Este", "total_linea": 5207.28}, {"fecha_str": "2024-03-31", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 7344.91}, {"fecha_str": "2024-03-31", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5473.21}, {"fecha_str": "2024-03-31", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 8104.3}, {"fecha_str": "2024-03-31", "nombre_centro": "Centro Valencia-Este", "total_linea": 5530.86}, {"fecha_str": "2024-04-01", "nombre_centro": "Centro Barcelona-Centro", "total_linea": 9638.12}, {"fecha_str": "2024-04-01", "nombre_centro": "Centro Madrid-Norte", "total_linea": 5762.81}, {"fecha_str": "2024-04-01", "nombre_centro": "Centro Sevilla-Sur", "total_linea": 10251.33}, {"fecha_str": "2024-04-01", "nombre_centro": "Centro Valencia-Este", "total_linea": 7753.67}], "serie_diaria_total": [{"fecha_str": "2024-03-01", "importe": 31960.06, "n_tickets": 472}, {"fecha_str": "2024-03-02", "importe": 29193.62, "n_tickets": 426}, {"fecha_str": "2024-03-03", "importe": 29914.37, "n_tickets": 432}, {"fecha_str": "2024-03-04", "importe": 20624.12, "n_tickets": 313}, {"fecha_str": "2024-03-05", "importe": 29288.95, "n_tickets": 440}, {"fecha_str": "2024-03-06", "importe": 23248.93, "n_tickets": 340}, {"fecha_str": "2024-03-07", "importe": 29009.5, "n_tickets": 427}, {"fecha_str": "2024-03-08", "importe": 27686.59, "n_tickets": 432}, {"fecha_str": "2024-03-09", "importe": 31936.89, "n_tickets": 476}, {"fecha_str": "2024-03-10", "importe": 26215.51, "n_tickets": 400}, {"fecha_str": "2024-03-11", "importe": 30704.69, "n_tickets": 448}, {"fecha_str": "2024-03-12", "importe": 28706.44, "n_tickets": 417}, {"fecha_str": "2024-03-13", "importe": 27559.29, "n_tickets": 425}, {"fecha_str": "2024-03-14", "importe": 30114.43, "n_tickets": 456}, {"fecha_str": "2024-03-15", "importe": 28434.09, "n_tickets": 440}, {"fecha_str": "2024-03-16", "importe": 29313.03, "n_tickets": 434}, {"fecha_str": "2024-03-17", "importe": 25142.44, "n_tickets": 362}, {"fecha_str": "2024-03-18", "importe": 27762.670000000002, "n_tickets": 393}, {"fecha_str": "2024-03-19", "importe": 20419.12, "n_tickets": 295}, {"fecha_str": "2024-03-20", "importe": 31100.49, "n_tickets": 452}, {"fecha_str": "2024-03-21", "importe": 26585.23, "n_tickets": 403}, {"fecha_str": "2024-03-22", "importe": 26793.72, "n_tickets": 399}, {"fecha_str": "2024-03-23", "importe": 26320.13, "n_tickets": 395}, {"fecha_str": "2024-03-24", "importe": 28061.59, "n_tickets": 433}, {"fecha_str": "2024-03-25", "importe": 29388.54, "n_tickets": 423}, {"fecha_str": "2024-03-26", "importe": 27656.8, "n_tickets": 420}, {"fecha_str": "2024-03-27", "importe": 24765.81, "n_tickets": 378}, {"fecha_str": "2024-03-28", "importe": 23431.28, "n_tickets": 352}, {"fecha_str": "2024-03-29", "importe": 32093.69, "n_tickets": 477}, {"fecha_str": "2024-03-30", "importe": 27127.09, "n_tickets": 403}, {"fecha_str": "2024-03-31", "importe": 26453.28, "n_tickets": 403}, {"fecha_str": "2024-04-01", "importe": 33405.93, "n_tickets": 506}], "dia_semana_total": [{"dia_semana": 0, "importe": 141885.95, "n_tickets": 2083, "dia_nombre": "Lunes"}, {"dia_semana": 1, "importe": 106071.31, "n_tickets": 1572, "dia_nombre": "Martes"}, {"dia_semana": 2, "importe": 106674.52, "n_tickets": 1595, "dia_nombre": "Miercoles"}, {"dia_semana": 3, "importe": 109140.44, "n_tickets": 1638, "dia_nombre": "Jueves"}, {"dia_semana": 4, "importe": 146968.15, "n_tickets": 2220, "dia_nombre": "Viernes"}, {"dia_semana": 5, "importe": 143890.76, "n_tickets": 2134, "dia_nombre": "Sabado"}, {"dia_semana": 6, "importe": 135787.19, "n_tickets": 2030, "dia_nombre": "Domingo"}], "dia_semana_centro": [{"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 0, "importe": 36730.17, "dia_nombre": "Lunes"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 1, "importe": 24659.02, "dia_nombre": "Martes"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 2, "importe": 21974.87, "dia_nombre": "Miercoles"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 3, "importe": 28602.11, "dia_nombre": "Jueves"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 4, "importe": 39357.25, "dia_nombre": "Viernes"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 5, "importe": 35169.67, "dia_nombre": "Sabado"}, {"nombre_centro": "Centro Barcelona-Centro", "dia_semana": 6, "importe": 38796.09, "dia_nombre": "Domingo"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 0, "importe": 39475.78, "dia_nombre": "Lunes"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 1, "importe": 24001.13, "dia_nombre": "Martes"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 2, "importe": 24563.95, "dia_nombre": "Miercoles"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 3, "importe": 27676.05, "dia_nombre": "Jueves"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 4, "importe": 38864.45, "dia_nombre": "Viernes"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 5, "importe": 38632.0, "dia_nombre": "Sabado"}, {"nombre_centro": "Centro Madrid-Norte", "dia_semana": 6, "importe": 26455.78, "dia_nombre": "Domingo"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 0, "importe": 35988.65, "dia_nombre": "Lunes"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 1, "importe": 30697.18, "dia_nombre": "Martes"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 2, "importe": 30632.62, "dia_nombre": "Miercoles"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 3, "importe": 24941.86, "dia_nombre": "Jueves"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 4, "importe": 32720.69, "dia_nombre": "Viernes"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 5, "importe": 37288.43, "dia_nombre": "Sabado"}, {"nombre_centro": "Centro Sevilla-Sur", "dia_semana": 6, "importe": 32985.21, "dia_nombre": "Domingo"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 0, "importe": 29691.35, "dia_nombre": "Lunes"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 1, "importe": 26713.98, "dia_nombre": "Martes"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 2, "importe": 29503.08, "dia_nombre": "Miercoles"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 3, "importe": 27920.42, "dia_nombre": "Jueves"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 4, "importe": 36025.76, "dia_nombre": "Viernes"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 5, "importe": 32800.66, "dia_nombre": "Sabado"}, {"nombre_centro": "Centro Valencia-Este", "dia_semana": 6, "importe": 37550.11, "dia_nombre": "Domingo"}], "hora_dia_semana": [{"dia_semana": 0, "hora_num": 9, "importe": 10937.06, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 10, "importe": 12127.28, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 11, "importe": 9580.08, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 12, "importe": 10771.02, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 13, "importe": 11763.54, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 14, "importe": 10745.86, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 15, "importe": 11313.1, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 16, "importe": 11396.41, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 17, "importe": 10328.71, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 18, "importe": 10346.62, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 19, "importe": 9997.22, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 20, "importe": 12631.1, "dia_nombre": "Lunes"}, {"dia_semana": 0, "hora_num": 21, "importe": 9947.95, "dia_nombre": "Lunes"}, {"dia_semana": 1, "hora_num": 9, "importe": 7038.13, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 10, "importe": 8453.67, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 11, "importe": 7825.07, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 12, "importe": 6983.31, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 13, "importe": 8607.3, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 14, "importe": 7350.02, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 15, "importe": 9261.6, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 16, "importe": 8880.35, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 17, "importe": 7760.35, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 18, "importe": 8351.25, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 19, "importe": 7846.56, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 20, "importe": 8709.07, "dia_nombre": "Martes"}, {"dia_semana": 1, "hora_num": 21, "importe": 9004.63, "dia_nombre": "Martes"}, {"dia_semana": 2, "hora_num": 9, "importe": 7530.62, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 10, "importe": 7605.46, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 11, "importe": 8477.77, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 12, "importe": 7783.68, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 13, "importe": 7774.16, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 14, "importe": 7985.83, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 15, "importe": 8021.05, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 16, "importe": 8509.45, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 17, "importe": 9047.81, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 18, "importe": 8933.99, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 19, "importe": 9352.6, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 20, "importe": 7796.85, "dia_nombre": "Miercoles"}, {"dia_semana": 2, "hora_num": 21, "importe": 7855.25, "dia_nombre": "Miercoles"}, {"dia_semana": 3, "hora_num": 9, "importe": 7211.31, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 10, "importe": 8743.55, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 11, "importe": 8702.5, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 12, "importe": 8712.1, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 13, "importe": 9622.89, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 14, "importe": 7850.76, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 15, "importe": 9269.03, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 16, "importe": 8295.47, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 17, "importe": 8150.61, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 18, "importe": 8652.68, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 19, "importe": 8520.3, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 20, "importe": 7483.45, "dia_nombre": "Jueves"}, {"dia_semana": 3, "hora_num": 21, "importe": 7925.79, "dia_nombre": "Jueves"}, {"dia_semana": 4, "hora_num": 9, "importe": 11460.45, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 10, "importe": 13212.68, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 11, "importe": 11184.86, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 12, "importe": 10132.63, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 13, "importe": 12815.4, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 14, "importe": 10894.51, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 15, "importe": 11486.1, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 16, "importe": 11536.45, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 17, "importe": 10240.32, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 18, "importe": 11132.55, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 19, "importe": 12593.01, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 20, "importe": 10486.46, "dia_nombre": "Viernes"}, {"dia_semana": 4, "hora_num": 21, "importe": 9792.73, "dia_nombre": "Viernes"}, {"dia_semana": 5, "hora_num": 9, "importe": 11408.17, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 10, "importe": 11829.62, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 11, "importe": 10246.35, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 12, "importe": 10626.62, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 13, "importe": 10842.49, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 14, "importe": 12952.4, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 15, "importe": 11529.01, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 16, "importe": 11071.26, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 17, "importe": 11118.43, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 18, "importe": 11234.18, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 19, "importe": 9500.51, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 20, "importe": 9062.5, "dia_nombre": "Sabado"}, {"dia_semana": 5, "hora_num": 21, "importe": 12469.22, "dia_nombre": "Sabado"}, {"dia_semana": 6, "hora_num": 9, "importe": 10053.03, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 10, "importe": 10266.2, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 11, "importe": 11226.25, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 12, "importe": 10855.01, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 13, "importe": 9906.38, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 14, "importe": 10693.45, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 15, "importe": 10094.84, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 16, "importe": 9381.4, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 17, "importe": 11435.77, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 18, "importe": 9455.14, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 19, "importe": 12063.71, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 20, "importe": 10203.15, "dia_nombre": "Domingo"}, {"dia_semana": 6, "hora_num": 21, "importe": 10152.86, "dia_nombre": "Domingo"}], "centro_seccion": [{"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "bebidas", "importe": 18164.37, "pct_del_centro": 0.0806269080476923}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "carne", "importe": 32258.01, "pct_del_centro": 0.1431849057287172}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "charcuteria", "importe": 18154.23, "pct_del_centro": 0.08058189922836063}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "cocina", "importe": 13232.61, "pct_del_centro": 0.058736109741266765}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "comida preparada", "importe": 14629.84, "pct_del_centro": 0.06493804984331693}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "congelados", "importe": 18424.31, "pct_del_centro": 0.0817807140138732}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "drogueria", "importe": 10054.9, "pct_del_centro": 0.04463108259349162}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "dulce", "importe": 15912.8, "pct_del_centro": 0.07063277517366791}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "fruta", "importe": 15280.039999999999, "pct_del_centro": 0.06782411831762182}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "lacteos", "importe": 13778.51, "pct_del_centro": 0.06115921767747568}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "pan", "importe": 8260.09, "pct_del_centro": 0.03666438840959872}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "perfumeria", "importe": 11581.32, "pct_del_centro": 0.05140646346176057}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "pesca", "importe": 20759.86, "pct_del_centro": 0.09214761223774706}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_seccion": "salado", "importe": 14798.29, "pct_del_centro": 0.06568575552540962}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "bebidas", "importe": 17713.75, "pct_del_centro": 0.08063831815429331}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "carne", "importe": 31540.24, "pct_del_centro": 0.143580659531876}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "charcuteria", "importe": 16965.34, "pct_del_centro": 0.07723133071855245}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "cocina", "importe": 12392.11, "pct_del_centro": 0.05641261216755344}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "comida preparada", "importe": 14591.99, "pct_del_centro": 0.0664271276338588}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "congelados", "importe": 18238.88, "pct_del_centro": 0.08302886786919637}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "drogueria", "importe": 9445.45, "pct_del_centro": 0.04299852951579817}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "dulce", "importe": 14991.86, "pct_del_centro": 0.06824745615155592}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "fruta", "importe": 15593.45, "pct_del_centro": 0.07098607478501531}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "lacteos", "importe": 14155.69, "pct_del_centro": 0.06444095879830913}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "pan", "importe": 8100.37, "pct_del_centro": 0.03687532076649455}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "perfumeria", "importe": 10443.43, "pct_del_centro": 0.04754163466019851}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "pesca", "importe": 21480.91, "pct_del_centro": 0.09778756360588474}, {"nombre_centro": "Centro Madrid-Norte", "nombre_seccion": "salado", "importe": 14015.67, "pct_del_centro": 0.06380354564141326}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "bebidas", "importe": 18433.83, "pct_del_centro": 0.0818355173504972}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "carne", "importe": 32136.04, "pct_del_centro": 0.1426653852724188}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "charcuteria", "importe": 17284.24, "pct_del_centro": 0.07673200427747016}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "cocina", "importe": 12928.67, "pct_del_centro": 0.05739579881684124}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "comida preparada", "importe": 15882.11, "pct_del_centro": 0.07050736002596883}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "congelados", "importe": 19216.3, "pct_del_centro": 0.0853092304780048}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "drogueria", "importe": 9811.24, "pct_del_centro": 0.04355621708835831}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "dulce", "importe": 15162.91, "pct_del_centro": 0.06731452901480742}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "fruta", "importe": 15994.54, "pct_del_centro": 0.07100648403957406}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "lacteos", "importe": 13654.86, "pct_del_centro": 0.06061966137523293}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "pan", "importe": 7975.33, "pct_del_centro": 0.035405841140497704}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "perfumeria", "importe": 11461.72, "pct_del_centro": 0.05088339134767656}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "pesca", "importe": 21171.48, "pct_del_centro": 0.09398909607367022}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_seccion": "salado", "importe": 14141.37, "pct_del_centro": 0.06277948369898174}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "bebidas", "importe": 16669.74, "pct_del_centro": 0.07570088212203374}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "carne", "importe": 32070.48, "pct_del_centro": 0.14563896174007754}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "charcuteria", "importe": 16977.49, "pct_del_centro": 0.07709844120052302}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "cocina", "importe": 11988.8, "pct_del_centro": 0.054443724712241334}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "comida preparada", "importe": 15896.97, "pct_del_centro": 0.07219156699909575}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "congelados", "importe": 18543.85, "pct_del_centro": 0.0842116195536748}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "drogueria", "importe": 9857.62, "pct_del_centro": 0.0447655770050284}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "dulce", "importe": 14889.03, "pct_del_centro": 0.06761429422063114}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "fruta", "importe": 15114.48, "pct_del_centro": 0.0686381112612336}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "lacteos", "importe": 13404.35, "pct_del_centro": 0.06087204235173931}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "pan", "importe": 7884.92, "pct_del_centro": 0.03580712113456276}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "perfumeria", "importe": 10500.22, "pct_del_centro": 0.0476837621027935}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "pesca", "importe": 21639.24, "pct_del_centro": 0.09826845268434885}, {"nombre_centro": "Centro Valencia-Este", "nombre_seccion": "salado", "importe": 14768.17, "pct_del_centro": 0.06706544291201631}], "pivot_mix": [{"seccion": "bebidas", "Centro Barcelona-Centro": 0.0806, "Centro Madrid-Norte": 0.0806, "Centro Sevilla-Sur": 0.0818, "Centro Valencia-Este": 0.0757}, {"seccion": "carne", "Centro Barcelona-Centro": 0.1432, "Centro Madrid-Norte": 0.1436, "Centro Sevilla-Sur": 0.1427, "Centro Valencia-Este": 0.1456}, {"seccion": "charcuteria", "Centro Barcelona-Centro": 0.0806, "Centro Madrid-Norte": 0.0772, "Centro Sevilla-Sur": 0.0767, "Centro Valencia-Este": 0.0771}, {"seccion": "cocina", "Centro Barcelona-Centro": 0.0587, "Centro Madrid-Norte": 0.0564, "Centro Sevilla-Sur": 0.0574, "Centro Valencia-Este": 0.0544}, {"seccion": "comida preparada", "Centro Barcelona-Centro": 0.0649, "Centro Madrid-Norte": 0.0664, "Centro Sevilla-Sur": 0.0705, "Centro Valencia-Este": 0.0722}, {"seccion": "congelados", "Centro Barcelona-Centro": 0.0818, "Centro Madrid-Norte": 0.083, "Centro Sevilla-Sur": 0.0853, "Centro Valencia-Este": 0.0842}, {"seccion": "drogueria", "Centro Barcelona-Centro": 0.0446, "Centro Madrid-Norte": 0.043, "Centro Sevilla-Sur": 0.0436, "Centro Valencia-Este": 0.0448}, {"seccion": "dulce", "Centro Barcelona-Centro": 0.0706, "Centro Madrid-Norte": 0.0682, "Centro Sevilla-Sur": 0.0673, "Centro Valencia-Este": 0.0676}, {"seccion": "fruta", "Centro Barcelona-Centro": 0.0678, "Centro Madrid-Norte": 0.071, "Centro Sevilla-Sur": 0.071, "Centro Valencia-Este": 0.0686}, {"seccion": "lacteos", "Centro Barcelona-Centro": 0.0612, "Centro Madrid-Norte": 0.0644, "Centro Sevilla-Sur": 0.0606, "Centro Valencia-Este": 0.0609}, {"seccion": "pan", "Centro Barcelona-Centro": 0.0367, "Centro Madrid-Norte": 0.0369, "Centro Sevilla-Sur": 0.0354, "Centro Valencia-Este": 0.0358}, {"seccion": "perfumeria", "Centro Barcelona-Centro": 0.0514, "Centro Madrid-Norte": 0.0475, "Centro Sevilla-Sur": 0.0509, "Centro Valencia-Este": 0.0477}, {"seccion": "pesca", "Centro Barcelona-Centro": 0.0921, "Centro Madrid-Norte": 0.0978, "Centro Sevilla-Sur": 0.094, "Centro Valencia-Este": 0.0983}, {"seccion": "salado", "Centro Barcelona-Centro": 0.0657, "Centro Madrid-Norte": 0.0638, "Centro Sevilla-Sur": 0.0628, "Centro Valencia-Este": 0.0671}], "top_diffs": [{"seccion": "comida preparada", "Centro Barcelona-Centro": 0.0649, "Centro Madrid-Norte": 0.0664, "Centro Sevilla-Sur": 0.0705, "Centro Valencia-Este": 0.0722}, {"seccion": "bebidas", "Centro Barcelona-Centro": 0.0806, "Centro Madrid-Norte": 0.0806, "Centro Sevilla-Sur": 0.0818, "Centro Valencia-Este": 0.0757}, {"seccion": "pesca", "Centro Barcelona-Centro": 0.0921, "Centro Madrid-Norte": 0.0978, "Centro Sevilla-Sur": 0.094, "Centro Valencia-Este": 0.0983}, {"seccion": "cocina", "Centro Barcelona-Centro": 0.0587, "Centro Madrid-Norte": 0.0564, "Centro Sevilla-Sur": 0.0574, "Centro Valencia-Este": 0.0544}, {"seccion": "salado", "Centro Barcelona-Centro": 0.0657, "Centro Madrid-Norte": 0.0638, "Centro Sevilla-Sur": 0.0628, "Centro Valencia-Este": 0.0671}, {"seccion": "perfumeria", "Centro Barcelona-Centro": 0.0514, "Centro Madrid-Norte": 0.0475, "Centro Sevilla-Sur": 0.0509, "Centro Valencia-Este": 0.0477}], "top_prod_por_centro": {"Centro Barcelona-Centro": [{"nombre_centro": "Centro Barcelona-Centro", "nombre_producto": "Danacol Natural Pack 4ud", "importe": 3448.98, "unidades": 521}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_producto": "Chuleton Ternera 400g", "importe": 2976.43, "unidades": 275}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_producto": "Solomillo Ternera 200g", "importe": 2756.88, "unidades": 227}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_producto": "Vino Tinto Rioja 750ml", "importe": 2584.44, "unidades": 316}, {"nombre_centro": "Centro Barcelona-Centro", "nombre_producto": "Aceite Oliva Virgen Extra 1L", "importe": 2516.28, "unidades": 285}], "Centro Madrid-Norte": [{"nombre_centro": "Centro Madrid-Norte", "nombre_producto": "Solomillo Ternera 200g", "importe": 3770.53, "unidades": 286}, {"nombre_centro": "Centro Madrid-Norte", "nombre_producto": "Danacol Natural Pack 4ud", "importe": 3099.64, "unidades": 464}, {"nombre_centro": "Centro Madrid-Norte", "nombre_producto": "Vino Tinto Rioja 750ml", "importe": 2572.3, "unidades": 302}, {"nombre_centro": "Centro Madrid-Norte", "nombre_producto": "Chuleton Ternera 400g", "importe": 2478.04, "unidades": 239}, {"nombre_centro": "Centro Madrid-Norte", "nombre_producto": "Aceite Oliva Virgen Extra 1L", "importe": 2384.43, "unidades": 268}], "Centro Sevilla-Sur": [{"nombre_centro": "Centro Sevilla-Sur", "nombre_producto": "Solomillo Ternera 200g", "importe": 3194.48, "unidades": 271}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_producto": "Vino Tinto Rioja 750ml", "importe": 3051.01, "unidades": 370}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_producto": "Danacol Natural Pack 4ud", "importe": 2825.22, "unidades": 428}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_producto": "Chuleton Ternera 400g", "importe": 2559.26, "unidades": 235}, {"nombre_centro": "Centro Sevilla-Sur", "nombre_producto": "Aceite Oliva Virgen Extra 1L", "importe": 2532.2599999999998, "unidades": 281}], "Centro Valencia-Este": [{"nombre_centro": "Centro Valencia-Este", "nombre_producto": "Solomillo Ternera 200g", "importe": 3131.18, "unidades": 259}, {"nombre_centro": "Centro Valencia-Este", "nombre_producto": "Danacol Natural Pack 4ud", "importe": 2933.26, "unidades": 449}, {"nombre_centro": "Centro Valencia-Este", "nombre_producto": "Chuleton Ternera 400g", "importe": 2538.2, "unidades": 241}, {"nombre_centro": "Centro Valencia-Este", "nombre_producto": "Vino Tinto Rioja 750ml", "importe": 2520.28, "unidades": 317}, {"nombre_centro": "Centro Valencia-Este", "nombre_producto": "Filete Ternera Bandeja 350g", "importe": 2213.97, "unidades": 256}]}}
+</script>
+<script>
+// ============================================================
+// CONFIG & HELPERS
+// ============================================================
+const DATA = JSON.parse(document.getElementById('data-json').textContent);
+
+const COLORS = {
+  green:'#2D6A4F', greenSoft:'#D7E8DD',
+  orange:'#E0703A', orangeSoft:'#FBE3D3',
+  blue:'#3D5A80', blueSoft:'#DDE6F0',
+  red:'#B3432A', ink:'#1C1B19', inkSoft:'#5B5650', paper:'#FAF6EE', paperDim:'#F1EBDB'
+};
+const CENTRO_COLORS = {};
+(DATA.centros||[]).forEach((c,i)=>{
+  CENTRO_COLORS[c] = [COLORS.green, COLORS.orange, COLORS.blue, COLORS.red][i % 4];
+});
+
+function fmtEUR(v, dec=0){
+  return new Intl.NumberFormat('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v) + ' €';
+}
+function fmtNum(v, dec=0){
+  return new Intl.NumberFormat('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v);
+}
+function fmtPct(v, dec=1){
+  return new Intl.NumberFormat('es-ES',{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v*100) + '%';
+}
+function shortCentro(c){ return c.replace('Centro ',''); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function safeChart(canvasId, config){
+  if(typeof Chart === 'undefined') return null;
+  const el = document.getElementById(canvasId);
+  if(!el) return null;
+  try { return new Chart(el, config); }
+  catch(e){ console.error('Chart error on', canvasId, e); return null; }
+}
+
+if(typeof Chart !== 'undefined'){
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = COLORS.inkSoft;
+  Chart.defaults.borderColor = 'rgba(28,27,25,0.08)';
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  Chart.defaults.plugins.legend.labels.usePointStyle = false;
+}
+
+// ============================================================
+// BARCODE DIVIDER
+// ============================================================
+(function renderBarcode(){
+  const el = document.getElementById('barcode');
+  if(!el) return;
+  // Patrón determinista (no decorativo-aleatorio puro) basado en el total de líneas del dataset,
+  // para que el ancho de barras varíe de forma reproducible.
+  const seed = DATA.kpi_global.n_lineas || 153008;
+  let html = '';
+  const nBars = 46;
+  for(let i=0;i<nBars;i++){
+    const w = 1 + ((seed >> (i % 12)) + i * 7) % 4; // 1..4 px
+    const gapBig = (i % 6 === 0);
+    html += `<span style="width:${w}px;margin-right:${gapBig?3:1}px;"></span>`;
+  }
+  el.innerHTML = html;
+})();
+
+// ============================================================
+// KPI STRIP
+// ============================================================
+(function renderKPIs(){
+  const k = DATA.kpi_global;
+  const items = [
+    {label:'Ventas totales', value: fmtEUR(k.ventas_totales), cls:''},
+    {label:'Tickets', value: fmtNum(k.n_tickets), cls:''},
+    {label:'Ticket medio', value: fmtEUR(k.ticket_medio,2), cls:'green'},
+    {label:'Unidades vendidas', value: fmtNum(k.unidades_totales), cls:''},
+    {label:'% líneas con descuento', value: fmtPct(k.pct_lineas_con_descuento), cls:'orange'},
+    {label:'Ahorro concedido', value: fmtEUR(k.ahorro_total), cls:'orange'},
+  ];
+  document.getElementById('kpiStrip').innerHTML = items.map(it=>`
+    <div class="kpi">
+      <p class="label">${it.label}</p>
+      <p class="value ${it.cls}">${it.value}</p>
+    </div>`).join('');
+})();
+
+// ============================================================
+// TAB DEFINITIONS
+// ============================================================
+const TABS = [
+  {id:'productos', num:'01', label:'Productos'},
+  {id:'cesta', num:'02', label:'Cesta de compra'},
+  {id:'centros', num:'03', label:'Ticket &amp; horario'},
+  {id:'promos', num:'04', label:'Descuentos'},
+  {id:'tiempo', num:'05', label:'Estacionalidad'},
+  {id:'mix', num:'06', label:'Mix entre centros'},
+];
+
+document.getElementById('tabs').innerHTML = TABS.map((t,i)=>
+  `<button class="tab-btn ${i===0?'active':''}" data-tab="${t.id}"><span class="num">${t.num}</span> ${t.label}</button>`
+).join('');
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+const panelsRoot = document.getElementById('panels');
+TABS.forEach((t,i)=>{
+  const div = document.createElement('div');
+  div.className = 'panel' + (i===0?' active':'');
+  div.id = 'panel-'+t.id;
+  panelsRoot.appendChild(div);
+});
+
+// ============================================================
+// PANEL 01 — PRODUCTOS (ranking unidades / importe)
+// ============================================================
+function renderProductos(){
+  const root = document.getElementById('panel-productos');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 01</p>
+      <h2>¿Qué productos y subsecciones más venden — y cuáles apenas se mueven?</h2>
+      <p class="desc">Ranking por importe y por unidades. Las referencias de mayor peso orientan las decisiones de espacio en tienda y nivel de stock; la cola de baja rotación señala candidatas a revisión o retirada del surtido.</p>
+    </div>
+
+    <div class="filterbar">
+      <span class="flabel">Ordenar por</span>
+      <select class="fselect" id="prodSortBy">
+        <option value="importe">Importe (€)</option>
+        <option value="unidades">Unidades</option>
+      </select>
+      <span class="flabel">Mostrar</span>
+      <select class="fselect" id="prodDir">
+        <option value="top">Top 12</option>
+        <option value="bottom">Cola 12 (menos venden)</option>
+      </select>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <p class="card-title">Ranking de productos <span class="tag" id="prodTag">Top por importe</span></p>
+        <div class="chart-wrap h340"><canvas id="chartProductos"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Importe por subsección <span class="tag">Top 12</span></p>
+        <div class="chart-wrap h340"><canvas id="chartSubsecciones"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span class="ico">Lectura</span>
+      El top de importe lo dominan productos de <b>carne (Ternera)</b>, <b>bebidas (Alcohol)</b> y <b>charcutería (Jamón)</b> — productos de precio unitario alto, no necesariamente los más comprados en unidades. La subsección <b>Ternera</b> es la que más factura con solo 6 referencias.
+    </div>
+
+    <div class="card">
+      <p class="card-title">Detalle por sección · unidades, importe y nº de referencias</p>
+      <div id="tablaSecciones"></div>
+    </div>
+  `;
+
+  let chartProd, chartSub;
+
+  function draw(){
+    const sortBy = document.getElementById('prodSortBy').value;
+    const dir = document.getElementById('prodDir').value;
+    const key = sortBy === 'importe' ? (dir==='top'?'top_productos_importe':'bottom_productos_importe')
+                                      : (dir==='top'?'top_productos_unidades':'bottom_productos_unidades');
+    const rows = DATA[key].slice(0,12);
+    document.getElementById('prodTag').textContent = (dir==='top'?'Top 12 · ':'Cola 12 · ') + (sortBy==='importe'?'por importe':'por unidades');
+
+    const labels = rows.map(r=>r.nombre_producto);
+    const vals = rows.map(r=> sortBy==='importe' ? r.importe : r.unidades);
+
+    if(chartProd) chartProd.destroy();
+    chartProd = safeChart('chartProductos', {
+      type:'bar',
+      data:{ labels, datasets:[{
+        data: vals,
+        backgroundColor: dir==='top'? COLORS.green : COLORS.orange,
+        borderRadius:0,
+      }]},
+      options:{
+        indexAxis:'y',
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=> sortBy==='importe' ? fmtEUR(c.parsed.x,2) : fmtNum(c.parsed.x)+' ud' } } },
+        scales:{ x:{ grid:{color:'rgba(28,27,25,0.08)'}, ticks:{ callback:v=> sortBy==='importe'? (v/1000)+'k€' : v } }, y:{ ticks:{font:{size:10}} } }
+      }
+    });
+  }
+
+  document.getElementById('prodSortBy').addEventListener('change', draw);
+  document.getElementById('prodDir').addEventListener('change', draw);
+  draw();
+
+  const subRows = DATA.subsecciones.slice(0,12);
+  chartSub = safeChart('chartSubsecciones', {
+    type:'bar',
+    data:{ labels: subRows.map(r=>r.nombre_subseccion+' ('+r.nombre_seccion+')'), datasets:[{
+      data: subRows.map(r=>r.importe), backgroundColor: COLORS.blue, borderRadius:0
+    }]},
+    options:{
+      indexAxis:'y',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>fmtEUR(c.parsed.x,2) } } },
+      scales:{ x:{ ticks:{ callback:v=>(v/1000)+'k€' } }, y:{ ticks:{font:{size:10}} } }
+    }
+  });
+
+  // Tabla secciones
+  const maxImporte = Math.max(...DATA.secciones.map(s=>s.importe));
+  const tbl = `<table class="dtable">
+    <thead><tr><th>Sección</th><th class="num">Importe</th><th>% del total</th><th class="num">Unidades</th><th class="num">Refs.</th></tr></thead>
+    <tbody>
+      ${DATA.secciones.map(s=>`
+        <tr>
+          <td>${cap(s.nombre_seccion)}</td>
+          <td class="num">${fmtEUR(s.importe)}</td>
+          <td><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${(s.importe/maxImporte*100).toFixed(1)}%"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:30px;">${(s.importe/DATA.kpi_global.ventas_totales*100).toFixed(1)}%</span></div></td>
+          <td class="num">${fmtNum(s.unidades)}</td>
+          <td class="num">${s.n_productos}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+  document.getElementById('tablaSecciones').innerHTML = tbl;
+}
+
+// ============================================================
+// PANEL 02 — CESTA DE COMPRA
+// ============================================================
+function renderCesta(){
+  const root = document.getElementById('panel-cesta');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 02</p>
+      <h2>¿Qué productos se compran juntos?</h2>
+      <p class="desc">Medido con <b>lift</b>: si lift &gt; 1, esas dos categorías aparecen juntas en un ticket más a menudo de lo que pasaría por puro azar. Lift = 1 significa independencia total (se compran juntas justo lo esperado, ni más ni menos).</p>
+    </div>
+
+    <div class="insight">
+      <span class="ico">Hallazgo</span>
+      Los valores de <b>lift se mantienen todos muy cerca de 1</b> (entre 1.0 y 1.16). Esto indica que, en el periodo analizado, <b>no existen afinidades de cesta relevantes</b>: comprar vino, por ejemplo, no aumenta de forma apreciable la probabilidad de comprar aperitivos. Las combinaciones más frecuentes reflejan simplemente categorías de compra habitual (fruta, lácteos, bebidas) presentes en la mayoría de los tickets, no una asociación real entre ellas.
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <p class="card-title">Pares de subsecciones más frecuentes <span class="tag">% de tickets que llevan ambas</span></p>
+        <div class="chart-wrap h340"><canvas id="chartCestaFreq"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Pares con mayor asociación (lift) <span class="tag">soporte mín. 50 tickets</span></p>
+        <div class="chart-wrap h340"><canvas id="chartCestaLift"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <p class="card-title">Matriz de co-ocurrencia entre secciones <span class="tag">% de tickets con ambas secciones</span></p>
+      <div id="heatmapSecciones" class="chart-wrap" style="height:420px; overflow-x:auto;"></div>
+    </div>
+  `;
+
+  const freqRows = DATA.top_pairs_by_freq.slice(0,10);
+  safeChart('chartCestaFreq', {
+    type:'bar',
+    data:{ labels: freqRows.map(r=>r.a+' + '+r.b), datasets:[{ data: freqRows.map(r=>r.pct_tickets), backgroundColor: COLORS.green, borderRadius:0 }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x.toFixed(1)+'% de tickets'}}}, scales:{ x:{ ticks:{callback:v=>v+'%'} }, y:{ticks:{font:{size:9.5}}} } }
+  });
+
+  const liftRows = DATA.top_pairs_by_lift.slice(0,10);
+  safeChart('chartCestaLift', {
+    type:'bar',
+    data:{ labels: liftRows.map(r=>r.a+' + '+r.b), datasets:[{ data: liftRows.map(r=>r.lift), backgroundColor: COLORS.orange, borderRadius:0 }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Lift: '+c.parsed.x.toFixed(2)}}}, scales:{ x:{ min:0.9, title:{display:true,text:'Lift (1.0 = independencia)'} }, y:{ticks:{font:{size:9.5}}} } }
+  });
+
+  // Heatmap secciones x secciones via canvas grid using HTML table (más legible que canvas)
+  const secciones = DATA.secciones.map(s=>s.nombre_seccion);
+  const pairMap = {};
+  DATA.sec_pairs.forEach(p=>{ pairMap[p.a+'|'+p.b]=p.pct_tickets; pairMap[p.b+'|'+p.a]=p.pct_tickets; });
+  let maxV = Math.max(...DATA.sec_pairs.map(p=>p.pct_tickets));
+
+  function colorFor(v){
+    if(v===undefined) return '#fff';
+    const t = v / maxV;
+    // interpolate paperDim -> green
+    const r1=241,g1=235,b1=219, r2=45,g2=106,b2=79;
+    const r = Math.round(r1+(r2-r1)*t), g = Math.round(g1+(g2-g1)*t), b = Math.round(b1+(b2-b1)*t);
+    return `rgb(${r},${g},${b})`;
+  }
+  let html = '<table class="dtable" style="font-size:10px;"><thead><tr><th></th>' +
+    secciones.map(s=>`<th style="writing-mode:vertical-rl;text-orientation:mixed;height:90px;">${s}</th>`).join('') + '</tr></thead><tbody>';
+  secciones.forEach(rowSec=>{
+    html += `<tr><th style="text-align:right;">${rowSec}</th>`;
+    secciones.forEach(colSec=>{
+      if(rowSec===colSec){ html += `<td style="background:${COLORS.ink};color:${COLORS.paper};text-align:center;">—</td>`; }
+      else {
+        const v = pairMap[rowSec+'|'+colSec];
+        html += `<td style="background:${colorFor(v)};text-align:center;color:${v && v/maxV>0.6?'#fff':COLORS.ink}">${v?v.toFixed(0):'0'}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('heatmapSecciones').innerHTML = html;
+}
+
+// ============================================================
+// PANEL 03 — TICKET MEDIO / CESTA / HORA PICO POR CENTRO
+// ============================================================
+function renderCentros(){
+  const root = document.getElementById('panel-centros');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 03</p>
+      <h2>Ticket medio, tamaño de cesta y hora pico por centro</h2>
+      <p class="desc">Comparativa operativa de los 4 centros: cuánto gasta cada cliente, cuántas líneas compra de media, y a qué hora se concentran las ventas — clave para dimensionar cajas y personal.</p>
+    </div>
+
+    <div class="grid grid-3">
+      ${DATA.por_centro_ticket.map(c=>`
+        <div class="card tinted">
+          <p class="card-title">${shortCentro(c.nombre_centro)}</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;margin:0 0 2px;color:${CENTRO_COLORS[c.nombre_centro]};">${fmtEUR(c.ticket_medio,2)}</p>
+          <p style="font-size:11px;color:var(--ink-soft);margin:0 0 10px;">ticket medio (mediana ${fmtEUR(c.ticket_mediano,2)})</p>
+          <p style="font-size:12px;margin:2px 0;"><b>${c.n_tickets.toLocaleString('es-ES')}</b> tickets</p>
+          <p style="font-size:12px;margin:2px 0;"><b>${c.cesta_media_lineas.toFixed(1)}</b> líneas/ticket de media</p>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="grid grid-2" style="margin-top:18px;">
+      <div class="card">
+        <p class="card-title">Ventas por hora del día <span class="tag" id="horaTag">Todos los centros</span></p>
+        <div class="filterbar" style="margin-bottom:12px;">
+          <span class="flabel">Centro</span>
+          <select class="fselect" id="centroHoraFilter">
+            <option value="ALL">Todos (agregado)</option>
+            ${DATA.centros.map(c=>`<option value="${c}">${shortCentro(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="chart-wrap h300"><canvas id="chartHoraCentro"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Hora pico de ventas por centro</p>
+        <div class="chart-wrap h300"><canvas id="chartHoraPico"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight green" style="margin-top:18px;">
+      <span class="ico">Lectura</span>
+      El ticket medio es muy similar entre centros (66–68 €) y la cesta también (~11,5 líneas). La diferencia operativa relevante está en <b>cuándo</b> se concentra la afluencia: Valencia-Este registra su pico por la tarde (19h), mientras el resto concentra la demanda al mediodía.
+    </div>
+  `;
+
+  let chartHC;
+  function drawHoraCentro(){
+    const sel = document.getElementById('centroHoraFilter').value;
+    let labels, data, color;
+    if(sel==='ALL'){
+      labels = DATA.hora_global.map(h=>h.hora_num+'h');
+      data = DATA.hora_global.map(h=>h.importe);
+      color = COLORS.ink;
+    } else {
+      const rows = DATA.hora_centro.filter(h=>h.nombre_centro===sel).sort((a,b)=>a.hora_num-b.hora_num);
+      labels = rows.map(h=>h.hora_num+'h');
+      data = rows.map(h=>h.importe);
+      color = CENTRO_COLORS[sel];
+    }
+    if(chartHC) chartHC.destroy();
+    chartHC = safeChart('chartHoraCentro', {
+      type:'line',
+      data:{ labels, datasets:[{ data, borderColor:color, backgroundColor:color+'33', fill:true, tension:.35, pointRadius:3 }]},
+      options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y,0)}}}, scales:{ y:{ ticks:{callback:v=>(v/1000)+'k€'} } } }
+    });
+  }
+  document.getElementById('centroHoraFilter').addEventListener('change', drawHoraCentro);
+  drawHoraCentro();
+
+  safeChart('chartHoraPico', {
+    type:'bar',
+    data:{ labels: DATA.hora_pico_resumen.map(h=>shortCentro(h.centro)), datasets:[{
+      data: DATA.hora_pico_resumen.map(h=>h.hora_pico),
+      backgroundColor: DATA.hora_pico_resumen.map(h=>CENTRO_COLORS[h.centro]),
+      borderRadius:0,
+    }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Hora pico: '+c.parsed.y+':00h'}}}, scales:{ y:{ title:{display:true,text:'Hora del día'}, min:0, max:23 } } }
+  });
+}
+
+// ============================================================
+// PANEL 04 — DESCUENTOS
+// ============================================================
+function renderPromos(){
+  const root = document.getElementById('panel-promos');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 04</p>
+      <h2>¿Qué promoción mueve más volumen — y cuánto cuesta en descuento?</h2>
+      <p class="desc">El detalle de ticket no incluye el coste de producto, por lo que no es posible calcular el margen real de cada promoción. El indicador disponible con precisión es el <b>ahorro concedido al cliente</b> por tipo de promoción, y si ese ahorro se traduce en un mayor volumen de unidades por línea.</p>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <p class="card-title">Importe vendido por tipo de descuento</p>
+        <div class="chart-wrap h300"><canvas id="chartPromoImporte"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Ahorro total concedido por tipo</p>
+        <div class="chart-wrap h300"><canvas id="chartPromoAhorro"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span class="ico">Hallazgo</span>
+      Las unidades medias por línea son <b>prácticamente idénticas</b> con descuento (1,82) y sin descuento (1,82). En el periodo analizado, <b>el descuento no incentiva un mayor volumen de compra</b>: únicamente reduce el precio pagado por la misma cantidad. Si el objetivo comercial de las promociones es elevar el volumen, este indicador sugiere que no se está logrando.
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <p class="card-title">% de ahorro sobre venta, por sección</p>
+        <div class="chart-wrap h300"><canvas id="chartPromoSeccion"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Comparativa: líneas con vs. sin descuento</p>
+        <div id="tablaComparativa"></div>
+      </div>
+    </div>
+  `;
+
+  const promo = DATA.promo_analysis;
+  safeChart('chartPromoImporte', {
+    type:'bar',
+    data:{ labels: promo.map(p=>p.tipo_descuento), datasets:[{ data: promo.map(p=>p.importe_final), backgroundColor: COLORS.green, borderRadius:0 }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y,0)}}}, scales:{ y:{ ticks:{callback:v=>(v/1000)+'k€'} }, x:{ticks:{font:{size:9.5}}} } }
+  });
+
+  safeChart('chartPromoAhorro', {
+    type:'bar',
+    data:{ labels: promo.filter(p=>p.tipo_descuento!=='Sin descuento').map(p=>p.tipo_descuento),
+      datasets:[{ data: promo.filter(p=>p.tipo_descuento!=='Sin descuento').map(p=>p.ahorro_total), backgroundColor: COLORS.orange, borderRadius:0 }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y,0)+' de ahorro'}}}, scales:{ y:{ ticks:{callback:v=>(v/1000)+'k€'} } } }
+  });
+
+  const ps = DATA.promo_seccion;
+  safeChart('chartPromoSeccion', {
+    type:'bar',
+    data:{ labels: ps.map(p=>cap(p.nombre_seccion)), datasets:[{ data: ps.map(p=>p.pct_ahorro_sobre_venta*100), backgroundColor: COLORS.blue, borderRadius:0 }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x.toFixed(1)+'%'}}}, scales:{ x:{ ticks:{callback:v=>v+'%'} }, y:{ticks:{font:{size:10}}} } }
+  });
+
+  const comp = DATA.comparativa_descuento;
+  const sinD = comp.find(c=>c.tiene_descuento===false);
+  const conD = comp.find(c=>c.tiene_descuento===true);
+  document.getElementById('tablaComparativa').innerHTML = `
+    <table class="dtable">
+      <thead><tr><th></th><th class="num">Sin descuento</th><th class="num">Con descuento</th></tr></thead>
+      <tbody>
+        <tr><td>Nº de líneas</td><td class="num">${fmtNum(sinD.n_lineas)}</td><td class="num">${fmtNum(conD.n_lineas)}</td></tr>
+        <tr><td>Unidades medias / línea</td><td class="num">${sinD.unidades_media.toFixed(2)}</td><td class="num">${conD.unidades_media.toFixed(2)}</td></tr>
+        <tr><td>Importe medio / línea</td><td class="num">${fmtEUR(sinD.importe_medio_linea,2)}</td><td class="num">${fmtEUR(conD.importe_medio_linea,2)}</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.5;">El <b>${fmtPct(DATA.kpi_global.pct_lineas_con_descuento)}</b> de las líneas de ticket llevan algún tipo de promoción aplicada.</p>
+  `;
+}
+
+// ============================================================
+// PANEL 05 — ESTACIONALIDAD
+// ============================================================
+function renderTiempo(){
+  const root = document.getElementById('panel-tiempo');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 05</p>
+      <h2>Estacionalidad horaria y diaria dentro del mes</h2>
+      <p class="desc">¿Qué días y horas vende más cada centro? Útil para turnos de personal, reposición de stock y planificación de promociones puntuales.</p>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Ventas diarias · marzo 2024 <span class="tag">por centro</span></p>
+      <div class="chart-wrap h300"><canvas id="chartSerieDiaria"></canvas></div>
+      <div class="legend-row">
+        ${DATA.centros.map(c=>`<span><span class="dot" style="background:${CENTRO_COLORS[c]}"></span>${shortCentro(c)}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:18px;">
+      <div class="card">
+        <p class="card-title">Ventas por día de la semana</p>
+        <div class="chart-wrap h280"><canvas id="chartDiaSemana"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Mapa de calor: hora × día de semana</p>
+        <div id="heatmapHoraDia" style="overflow-x:auto;"></div>
+      </div>
+    </div>
+
+    <div class="insight green" style="margin-top:18px;">
+      <span class="ico">Lectura</span>
+      <b>Viernes, sábado y domingo</b> concentran la mayor facturación de la semana (más de 135.000 € cada uno), frente a martes-miércoles-jueves (106.000–109.000 €). El <b>lunes también repunta</b> con fuerza, un patrón compatible con compra de reposición tras el fin de semana, aunque el dato no permite confirmar la causa.
+    </div>
+  `;
+
+  // serie diaria por centro
+  const fechas = [...new Set(DATA.serie_diaria_centro.map(r=>r.fecha_str))].sort();
+  const datasets = DATA.centros.map(c=>{
+    const map = {};
+    DATA.serie_diaria_centro.filter(r=>r.nombre_centro===c).forEach(r=>map[r.fecha_str]=r.total_linea);
+    return {
+      label: shortCentro(c),
+      data: fechas.map(f=>map[f]||0),
+      borderColor: CENTRO_COLORS[c],
+      backgroundColor: CENTRO_COLORS[c]+'22',
+      tension:.3, pointRadius:1.5, borderWidth:2,
+    };
+  });
+  safeChart('chartSerieDiaria', {
+    type:'line',
+    data:{ labels: fechas.map(f=>f.slice(8,10)+'/'+f.slice(5,7)), datasets },
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtEUR(c.parsed.y,0)}}}, scales:{ y:{ticks:{callback:v=>(v/1000)+'k€'}}, x:{ticks:{maxTicksLimit:16, font:{size:9}}} } }
+  });
+
+  const dw = DATA.dia_semana_total;
+  safeChart('chartDiaSemana', {
+    type:'bar',
+    data:{ labels: dw.map(d=>d.dia_nombre), datasets:[{ data: dw.map(d=>d.importe),
+      backgroundColor: dw.map(d=> ['Viernes','Sabado','Domingo'].includes(d.dia_nombre)? COLORS.green : COLORS.blue), borderRadius:0 }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y,0)}}}, scales:{ y:{ticks:{callback:v=>(v/1000)+'k€'}} } }
+  });
+
+  // heatmap hora x dia
+  const dias = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+  const horas = [...new Set(DATA.hora_dia_semana.map(h=>h.hora_num))].sort((a,b)=>a-b);
+  const hdMap = {};
+  let maxHD = 0;
+  DATA.hora_dia_semana.forEach(h=>{ hdMap[h.dia_nombre+'|'+h.hora_num]=h.importe; if(h.importe>maxHD) maxHD=h.importe; });
+  function colorForHD(v){
+    const t = (v||0)/maxHD;
+    const r1=241,g1=235,b1=219, r2=224,g2=112,b2=58;
+    const r = Math.round(r1+(r2-r1)*t), g = Math.round(g1+(g2-g1)*t), b = Math.round(b1+(b2-b1)*t);
+    return `rgb(${r},${g},${b})`;
+  }
+  let html = '<table class="dtable" style="font-size:10px;"><thead><tr><th>Día</th>' + horas.map(h=>`<th>${h}h</th>`).join('') + '</tr></thead><tbody>';
+  dias.forEach(d=>{
+    html += `<tr><th style="text-align:left;">${d.slice(0,3)}</th>`;
+    horas.forEach(h=>{
+      const v = hdMap[d+'|'+h];
+      html += `<td style="background:${colorForHD(v)};text-align:center;color:${v/maxHD>0.6?'#fff':COLORS.ink}">${v?Math.round(v/100):''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table><p style="font-size:10.5px;color:var(--ink-soft);margin-top:8px;">Valores en cientos de €</p>';
+  document.getElementById('heatmapHoraDia').innerHTML = html;
+}
+
+// ============================================================
+// PANEL 06 — MIX DE PRODUCTO ENTRE CENTROS
+// ============================================================
+function renderMix(){
+  const root = document.getElementById('panel-mix');
+  root.innerHTML = `
+    <div class="panel-head">
+      <p class="kicker">Análisis 06</p>
+      <h2>Comparativa del mix de producto entre centros</h2>
+      <p class="desc">Comparativa del peso (%) de cada sección dentro de las ventas totales de cada centro. Si el mix es muy parecido entre centros, la política comercial puede ser uniforme; si difiere mucho, conviene surtido diferenciado.</p>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Peso de cada sección dentro de cada centro <span class="tag">% sobre ventas del centro</span></p>
+      <div class="chart-wrap h340"><canvas id="chartMixRadar"></canvas></div>
+    </div>
+
+    <div class="insight green" style="margin-top:18px;">
+      <span class="ico">Lectura</span>
+      El mix de producto es <b>muy homogéneo</b> entre los 4 centros: ninguna sección varía más de 1,5 puntos porcentuales de peso entre el centro que más y el que menos la vende. No se observa evidencia de especialización geográfica relevante en el periodo analizado.
+    </div>
+
+    <div class="grid grid-2" style="margin-top:18px;">
+      <div class="card">
+        <p class="card-title">Secciones con mayor diferencia de peso entre centros</p>
+        <div class="chart-wrap h300"><canvas id="chartDiffs"></canvas></div>
+      </div>
+      <div class="card">
+        <p class="card-title">Top producto por centro <span class="tag" id="mixTag">Centro Madrid-Norte</span></p>
+        <div class="filterbar" style="margin-bottom:12px;">
+          <span class="flabel">Centro</span>
+          <select class="fselect" id="mixCentroFilter">
+            ${DATA.centros.map(c=>`<option value="${c}">${shortCentro(c)}</option>`).join('')}
+          </select>
+        </div>
+        <div id="tablaTopCentro"></div>
+      </div>
+    </div>
+  `;
+
+  // Radar: secciones (categorias) x centro (datasets) - usar % del mix
+  const seccionesNames = DATA.pivot_mix.map(p=>cap(p.seccion));
+  const radarDatasets = DATA.centros.map(c=>({
+    label: shortCentro(c),
+    data: DATA.pivot_mix.map(p=>(p[c]||0)*100),
+    borderColor: CENTRO_COLORS[c],
+    backgroundColor: CENTRO_COLORS[c]+'18',
+    pointRadius:2, borderWidth:2,
+  }));
+  safeChart('chartMixRadar', {
+    type:'radar',
+    data:{ labels: seccionesNames, datasets: radarDatasets },
+    options:{
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.r.toFixed(1)+'%'}} },
+      scales:{ r:{ ticks:{ callback:v=>v+'%', font:{size:9} }, pointLabels:{font:{size:9.5}} } }
+    }
+  });
+
+  safeChart('chartDiffs', {
+    type:'bar',
+    data:{ labels: DATA.top_diffs.map(d=>cap(d.seccion)), datasets: DATA.centros.map(c=>({
+      label: shortCentro(c), data: DATA.top_diffs.map(d=>(d[c]||0)*100), backgroundColor: CENTRO_COLORS[c]
+    })) },
+    options:{ plugins:{ legend:{ position:'bottom', labels:{font:{size:9.5}} } }, scales:{ x:{ ticks:{font:{size:9}} }, y:{ ticks:{callback:v=>v+'%'} } } }
+  });
+
+  function drawTopCentro(){
+    const centro = document.getElementById('mixCentroFilter').value;
+    document.getElementById('mixTag').textContent = shortCentro(centro);
+    const rows = DATA.top_prod_por_centro[centro] || [];
+    document.getElementById('tablaTopCentro').innerHTML = `
+      <table class="dtable">
+        <thead><tr><th>Producto</th><th class="num">Importe</th><th class="num">Unidades</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr><td>${r.nombre_producto}</td><td class="num">${fmtEUR(r.importe,2)}</td><td class="num">${fmtNum(r.unidades)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+  document.getElementById('mixCentroFilter').addEventListener('change', drawTopCentro);
+  drawTopCentro();
+}
+
+// ============================================================
+// INIT — cada panel se aísla: un fallo en uno no debe tumbar el resto
+// ============================================================
+if(typeof Chart === 'undefined'){
+  const warn = document.createElement('div');
+  warn.style.cssText = 'background:#FBE3D3;border-left:4px solid #E0703A;padding:10px 16px;margin:0 0 18px;font-family:IBM Plex Mono,monospace;font-size:12.5px;';
+  warn.textContent = 'No se ha podido cargar la librería de gráficos (Chart.js) desde el CDN. Comprueba la conexión a internet y vuelve a abrir el archivo; el resto del contenido (KPIs, tablas y rankings) sigue disponible.';
+  document.getElementById('panels').before(warn);
+}
+[renderProductos, renderCesta, renderCentros, renderPromos, renderTiempo, renderMix].forEach(fn=>{
+  try { fn(); } catch(e){ console.error('Error renderizando panel:', fn.name, e); }
+});
+
+</script>
+</body>
+</html>
