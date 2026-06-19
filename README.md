@@ -23,7 +23,7 @@ Durante años gestioné un supermercado tomando decisiones diarias —qué pedir
 - ¿Qué patrones de estacionalidad (día de la semana, fecha) afectan al ticket medio?
 - ¿Cómo impactan las promociones y descuentos al comportamiento de compra?
 
-Los datos son **ficticios**, generados con fines de práctica, pero el detalle (a nivel de línea de ticket, no agregados) y el tipo de preguntas que resuelve son los mismos que en un caso real de retail.
+Los datos son **ficticios**, generados con ia y con fines de práctica, pero el detalle (a nivel de línea de ticket, no agregados) y el tipo de preguntas que resuelve son los mismos que en un caso real de retail.
 
 ## Qué incluye el dashboard
 
@@ -73,7 +73,7 @@ El resto de archivos (`notebook/`, `data/`, `src/`) documentan **cómo se constr
 
 ## Sobre este proyecto
 
-Este es el primer proyecto con IA de mi portfolio de transición de jefe de supermercado a analista de datos en el que he utilizado la IA en casi todos los pasos. Llevo más de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría, y salvar pasos tecnicos en los que estoy mejorando.
+Este es el primer proyecto con IA de mi portfolio de transición de jefe de supermercado a analista de datos en el que he utilizado la he en casi todos los pasos, salvo en la parte de negocio. Llevo menos de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría, y salvar pasos tecnicos en los que estoy mejorando.
 
 Más proyectos próximamente.
 
