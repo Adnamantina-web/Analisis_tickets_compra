@@ -46,13 +46,11 @@ Cada bloque combina gráficas (Chart.js) con una lectura en lenguaje de negocio,
 .
 ├── dashboard_ventas_marzo2024.html   # Dashboard final, autocontenido — ábrelo directamente en el navegador
 ├── notebook/
-│   └── generar_dashboard.ipynb       # Notebook (Google Colab) que regenera el dashboard desde el CSV original
+│   └── panel_ventas_mercado.ipynb       # Notebook (Google Colab) que regenera el dashboard desde el CSV original
 ├── data/
 │   ├── ventas_ticket_decimales.csv   # Dataset original de detalle de ticket
 │   └── dashboard_data.json           # Agregados ya calculados, en el formato que consume el dashboard
-└── src/
-    ├── dashboard_template.html       # Plantilla HTML/CSS con placeholders (__DATA_JSON__, __APP_JS__)
-    └── app.js                        # Lógica de renderizado, filtros e interactividad
+
 ```
 
 **El archivo que importa para verlo funcionar es `dashboard_ventas_marzo2024.html`** — no necesita servidor, instalación ni dependencias: se abre directamente en cualquier navegador moderno.
@@ -61,7 +59,7 @@ El resto de archivos (`notebook/`, `data/`, `src/`) documentan **cómo se constr
 
 ## Cómo reproducirlo desde cero
 
-1. Abre `notebook/generar_dashboard.ipynb` en Google Colab.
+1. Abre `notebook/panel_venas_mercado_central.ipynb`en google colab.
 2. Sube `data/ventas_ticket_decimales.csv` cuando el notebook lo solicite.
 3. Ejecuta las celdas en orden: carga → limpieza → cálculo de agregados → ensamblado del HTML.
 4. La última celda descarga automáticamente el dashboard final en un único archivo `.html`.
@@ -75,7 +73,7 @@ El resto de archivos (`notebook/`, `data/`, `src/`) documentan **cómo se constr
 
 ## Sobre este proyecto
 
-Este es el primer proyecto de mi portfolio de transición de jefe de supermercado a analista de datos. Llevo más de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría.
+Este es el primer proyecto de mi portfolio de transición de jefe de supermercado a analista de datos en el que he utilizado la IA en casi todos los pasos. Llevo más de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría, y salvar pasos tecnicos en los que estoy mejorando.
 
 Más proyectos próximamente.
 
