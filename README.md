@@ -1,6 +1,6 @@
 # Panel de Análisis de Ventas — Mercado Central
 
-Dashboard interactivo que analiza el detalle transaccional de un supermercado ficticio (153.008 líneas de ticket, 4 centros, 282 referencias de producto), construido como proyecto de práctica en mi transición de jefe de supermercado a analista de datos.
+Dashboard interactivo que analiza el detalle transaccional de un supermercado ficticio (153.008 líneas de ticket, 4 centros, 282 referencias de producto), construido como proyecto de práctica en mi transición de jefe de supermercado a analista de datos, y ayudado por la IA.
 
 🔗 **[![Vista previa del dashboard](docs/preview.png)](https://adnamantina-web.github.io/Analisis_tickets_compra/dashboard_ventas_marzo2024.html))**
 
@@ -79,7 +79,7 @@ Este es el primer proyecto de mi portfolio de transición de jefe de supermercad
 
 Más proyectos próximamente.
 
-📫 Contacto: [tu email] · [tu LinkedIn]
+📫 Contacto: [armillas1976@gmail.com] · [(https://www.linkedin.com/in/bego%C3%B1a-armillas-alonso-b31a0562/)]
 
 ---
 
