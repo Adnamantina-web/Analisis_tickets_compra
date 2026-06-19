@@ -2,7 +2,7 @@
 
 Dashboard interactivo que analiza el detalle transaccional de un supermercado ficticio (153.008 líneas de ticket, 4 centros, 282 referencias de producto), construido como proyecto de práctica en mi transición de jefe de supermercado a analista de datos.
 
-🔗 **[![Vista previa del dashboard](docs/preview.png)](https://Adnamantina-web.github.io/Analisis_tickets_compra/)**
+🔗 **[![Vista previa del dashboard](docs/preview.png)](https://adnamantina-web.github.io/Analisis_tickets_compra/dashboard_ventas_marzo2024.html))**
 
 ![Vista previa del dashboard](docs/preview.png)
 <img width="390" height="586" alt="image" src="https://github.com/user-attachments/assets/7278b5a8-a495-419a-b29b-787963291ce8" />
