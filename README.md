@@ -73,7 +73,7 @@ El resto de archivos (`notebook/`, `data/`, `src/`) documentan **cómo se constr
 
 ## Sobre este proyecto
 
-Este es el primer proyecto de mi portfolio de transición de jefe de supermercado a analista de datos en el que he utilizado la IA en casi todos los pasos. Llevo más de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría, y salvar pasos tecnicos en los que estoy mejorando.
+Este es el primer proyecto con IA de mi portfolio de transición de jefe de supermercado a analista de datos en el que he utilizado la IA en casi todos los pasos. Llevo más de un año formándome en análisis de datos, y este caso de práctica busca demostrar algo concreto: sé qué preguntas de negocio hacerle a los datos porque las he vivido desde dentro de la operación, no solo desde la teoría, y salvar pasos tecnicos en los que estoy mejorando.
 
 Más proyectos próximamente.
 
